@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/tikorst/siatma-backend/config"
-	"github.com/tikorst/siatma-backend/models"
+	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/models"
 )
 
 func Frontend() gin.HandlerFunc {
@@ -15,7 +15,5 @@ func Frontend() gin.HandlerFunc {
 		config.DB.Find(&classes)
 		c.HTML(http.StatusOK, "index.html", gin.H{"classes": classes})
 	}
-
-
 
 }

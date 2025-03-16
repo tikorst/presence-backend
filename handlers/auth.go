@@ -5,10 +5,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gin-gonic/gin"
-	"github.com/tikorst/siatma-backend/config"
-	"github.com/tikorst/siatma-backend/models"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -72,7 +72,7 @@ func Login() gin.HandlerFunc {
 
 			if deviceErr := <-deviceChan; deviceErr != nil {
 				if gorm.ErrDuplicatedKey == deviceErr {
-					c.JSON(http.StatusForbidden, gin.H{"error": "Device already in use by another user"})
+					c.JSON(http.StatusForbidden, gin.H{"error": "Device sudah digunakan oleh user lain"})
 					return
 				} else {
 					c.JSON(http.StatusForbidden, gin.H{"error": "Unknown Error"})

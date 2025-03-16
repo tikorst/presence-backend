@@ -15,7 +15,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      DB_DSN: "tikorst:GU6XUe7xsvueEuv@tcp(siatma.mysql.database.azure.com:3306)/siatma?tls=custom&parseTime=True&loc=Local"
+      DB_DSN: "tikorst:GU6XUe7xsvueEuv@tcp(presence.mysql.database.azure.com:3306)/presence?tls=custom&parseTime=True&loc=Local"
       SECRET_KEY: "s2Dp1l3GJye/3rOSkOTCw02/hkZ2EP7b0yULee5cYeE="
       PORT: 8080
 

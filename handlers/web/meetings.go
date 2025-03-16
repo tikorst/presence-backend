@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tikorst/siatma-backend/config"
-	"github.com/tikorst/siatma-backend/models"
+	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/models"
 )
 
 func Meetings() gin.HandlerFunc {

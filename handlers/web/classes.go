@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/tikorst/siatma-backend/config"
-	"github.com/tikorst/siatma-backend/models"
+	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/models"
 )
 
 func Classes() gin.HandlerFunc {
@@ -25,4 +25,4 @@ func Classes() gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{"classes": classes})
 	}
-}		
+}

@@ -7,15 +7,13 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/tikorst/siatma-backend/config"
-	"github.com/tikorst/siatma-backend/models"
+	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 func Login2() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		
 
 		// Database Ping Test
 

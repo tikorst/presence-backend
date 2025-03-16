@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tikorst/siatma-backend/config"
+	"github.com/tikorst/presence-backend/config"
 )
 
 func GetAll(c *gin.Context) {

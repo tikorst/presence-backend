@@ -7,8 +7,8 @@
 
 // 	"github.com/gofiber/fiber/v2"
 // 	"github.com/joho/godotenv"
-// 	"github.com/tikorst/siatma-backend/config"
-// 	"github.com/tikorst/siatma-backend/handlers"
+// 	"github.com/tikorst/presence-backend/config"
+// 	"github.com/tikorst/presence-backend/handlers"
 // )
 
 // func init() {
@@ -54,10 +54,10 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-	"github.com/tikorst/siatma-backend/config"
-	"github.com/tikorst/siatma-backend/handlers"
-	"github.com/tikorst/siatma-backend/handlers/web"
-	"github.com/tikorst/siatma-backend/middleware"
+	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/handlers"
+	"github.com/tikorst/presence-backend/handlers/web"
+	"github.com/tikorst/presence-backend/middleware"
 )
 
 func init() {
@@ -87,7 +87,7 @@ func main() {
 	// API
 	r.GET("/ping", handlers.Ping())
 	r.POST("/login", handlers.Login())
-	r.GET("/login", handlers.Login2())
+	// r.GET("/login", handlers.Login2())
 	r.GET("/frontend", handlers.Frontend())
 	r.GET("/getAllRedis", handlers.GetAll)
 	r.GET("/web/generate_qr/:classID", handlers.GenerateQR)
@@ -107,5 +107,5 @@ func main() {
 		protected.GET("/validate", handlers.ValidateToken())
 	}
 	port := os.Getenv("PORT")
-	r.Run(":" + port) // Jalankan di port 8080
+	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
 }

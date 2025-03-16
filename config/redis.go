@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -15,9 +16,11 @@ var (
 )
 
 func ConnectRedis() {
+	redis_addr := os.Getenv("REDIS_ADDR")
+	redis_pass := os.Getenv("REDIS_PASSWORD")
 	RedisDB = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "tiko07",
+		Addr:     redis_addr,
+		Password: redis_pass,
 		DB:       0,
 	})
 	if RedisDB == nil {

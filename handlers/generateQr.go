@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/skip2/go-qrcode"
-	"github.com/tikorst/siatma-backend/config"
+	"github.com/tikorst/presence-backend/config"
 )
 
 var upgrader = websocket.Upgrader{
