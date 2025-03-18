@@ -1,7 +1,7 @@
 package models
 
 type DosenPengampu struct {
-	NIP     string  `gorm:"primaryKey" grom:"unique" json:"nip"`
+	NIP     string  `gorm:"primaryKey" json:"nip"`
 	IDKelas int     `gorm:"primaryKey" json:"id_kelas"`
 	Status  string  `json:"status"`
 	Kelas   []Kelas `gorm:"foreignKey:IDKelas;references:IDKelas"`

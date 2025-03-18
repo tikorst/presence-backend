@@ -90,12 +90,13 @@ func main() {
 	// r.GET("/login", handlers.Login2())
 	r.GET("/frontend", handlers.Frontend())
 	r.GET("/getAllRedis", handlers.GetAll)
-	r.GET("/web/generate_qr/:classID", handlers.GenerateQR)
+	
 
 	// Web
 	r.POST("/web/login", web.Login())
 	protectedWeb := r.Group("/web").Use(middleware.Web())
-	{
+	{	
+		protectedWeb.GET("/generate_qr/:classID/:meetingID", handlers.GenerateQR)
 		protectedWeb.GET("/classes", web.Classes())
 		protectedWeb.GET("/classes/:classID/meetings", web.Meetings())
 	}
@@ -103,7 +104,7 @@ func main() {
 	// Protected routes
 	protected := r.Group("/api").Use(middleware.Auth())
 	{
-		protected.POST("/presensi", handlers.ValidateQr)
+		protected.POST("/presence", handlers.ValidateQr)
 		protected.GET("/validate", handlers.ValidateToken())
 	}
 	port := os.Getenv("PORT")

@@ -16,8 +16,8 @@ func Classes() gin.HandlerFunc {
 		claims, _ := c.Get("claims")
 		jwtClaims := claims.(jwt.MapClaims)
 		username := jwtClaims["sub"].(string)
-
-		if err := config.DB.Preload("Kelas.MataKuliah").Find(&classes).Where("nip = ?", username).Error; err != nil {
+		fmt.Println("Username", username)
+		if err := config.DB.Preload("Kelas.MataKuliah").Where("nip = ?", username).Find(&classes).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch classes"})
 			fmt.Println(err)
 			return
