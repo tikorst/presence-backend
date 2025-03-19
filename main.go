@@ -55,7 +55,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/tikorst/presence-backend/config"
-	"github.com/tikorst/presence-backend/handlers"
+	"github.com/tikorst/presence-backend/handlers/mobile"
 	"github.com/tikorst/presence-backend/handlers/web"
 	"github.com/tikorst/presence-backend/middleware"
 )
@@ -85,27 +85,27 @@ func main() {
 	}))
 
 	// API
-	r.GET("/ping", handlers.Ping())
-	r.POST("/login", handlers.Login())
+	// r.GET("/ping", handlers.Ping())
+	r.POST("/login", mobile.Login())
 	// r.GET("/login", handlers.Login2())
-	r.GET("/frontend", handlers.Frontend())
-	r.GET("/getAllRedis", handlers.GetAll)
-	
+	// r.GET("/frontend", handlers.Frontend())
+	// r.GET("/getAllRedis", handlers.GetAll)
 
 	// Web
 	r.POST("/web/login", web.Login())
 	protectedWeb := r.Group("/web").Use(middleware.Web())
-	{	
-		protectedWeb.GET("/generate_qr/:classID/:meetingID", handlers.GenerateQR)
+	{
 		protectedWeb.GET("/classes", web.Classes())
 		protectedWeb.GET("/classes/:classID/meetings", web.Meetings())
+		protectedWeb.GET("/generate_qr/:classID/:meetingID", web.GenerateQR)
+		protectedWeb.GET("/attendance/:classID/:meetingID", web.PresenceData)
 	}
 
 	// Protected routes
 	protected := r.Group("/api").Use(middleware.Auth())
 	{
-		protected.POST("/presence", handlers.ValidateQr)
-		protected.GET("/validate", handlers.ValidateToken())
+		protected.POST("/presence", mobile.ValidateQr)
+		protected.GET("/validate", mobile.ValidateToken())
 	}
 	port := os.Getenv("PORT")
 	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
