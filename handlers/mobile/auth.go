@@ -10,7 +10,6 @@ import (
 	"github.com/tikorst/presence-backend/config"
 	"github.com/tikorst/presence-backend/models"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type LoginRequest struct {
@@ -23,7 +22,7 @@ func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginRequest
 		if err := c.Bind(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Input tidak valid"})
 			return
 		}
 
@@ -47,7 +46,7 @@ func Login() gin.HandlerFunc {
 		case user = <-userChan:
 			// User ditemukan, lanjut proses
 		case <-errChan:
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Username atau password salah"})
 			return
 		}
 
@@ -56,30 +55,30 @@ func Login() gin.HandlerFunc {
 		passErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 		// Cek hasil verifikasi password
 		if passErr != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Username atau password salah"})
 		}
 
 		// Async Update Device ID jika berbeda
-		if user.DeviceID != req.DeviceID {
-			deviceChan := make(chan error, 1)
-			go func() {
-				// var otherUser models.User
-				err := config.DB.Model(user).Update("device_id", req.DeviceID).Where("id_user = ?", user.IDUser).Error
-				deviceChan <- err // True jika ada user lain dengan device yang sama
-			}()
+		// if user.DeviceID != req.DeviceID {
+		// 	deviceChan := make(chan error, 1)
+		// 	go func() {
+		// 		// var otherUser models.User
+		// 		err := config.DB.Model(user).Update("device_id", req.DeviceID).Where("id_user = ?", user.IDUser).Error
+		// 		deviceChan <- err // True jika ada user lain dengan device yang sama
+		// 	}()
 
-			// Cek hasil device check
+		// 	// Cek hasil device check
 
-			if deviceErr := <-deviceChan; deviceErr != nil {
-				if gorm.ErrDuplicatedKey == deviceErr {
-					c.JSON(http.StatusForbidden, gin.H{"error": "Device sudah digunakan oleh user lain"})
-					return
-				} else {
-					c.JSON(http.StatusForbidden, gin.H{"error": "Unknown Error"})
-					return
-				}
-			}
-		}
+		// 	if deviceErr := <-deviceChan; deviceErr != nil {
+		// 		if gorm.ErrDuplicatedKey == deviceErr {
+		// 			c.JSON(http.StatusForbidden, gin.H{"error": "Device sudah digunakan oleh user lain"})
+		// 			return
+		// 		} else {
+		// 			c.JSON(http.StatusForbidden, gin.H{"error": "Unknown Error"})
+		// 			return
+		// 		}
+		// 	}
+		// }
 
 		// Generate JWT Token
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -89,13 +88,23 @@ func Login() gin.HandlerFunc {
 
 		tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token", "err": err})
+			c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Gagal membuat token"})
 			return
 		}
+		loginResult := &LoginResult{
+			Name:        user.Nama,
+			Username:    user.Username,
+			TokenString: tokenString,
+		}
 
+		loginResponse := &LoginResponse{
+			LoginResult: loginResult,
+			Error:       false,
+			Message:     "Login successful",
+		}
 		// Kirim response ke client
-		c.JSON(http.StatusOK, gin.H{
-			"token_string": tokenString,
-		})
+		c.JSON(http.StatusOK,
+			loginResponse,
+		)
 	}
 }
