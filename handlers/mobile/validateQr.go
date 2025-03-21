@@ -47,7 +47,7 @@ func ValidateQr(c *gin.Context) {
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)
 	fmt.Println("Username:", username)
-	pertemuanChan := make(chan *models.Pertemuan)
+	jadwalChan := make(chan *models.Jadwal)
 	mahasiswaKelasChan := make(chan *models.MahasiswaKelas)
 	presensiChan := make(chan error)
 	distanceChan := make(chan float64)
@@ -84,14 +84,15 @@ func ValidateQr(c *gin.Context) {
 	}
 
 	// Ambil data pertemuan dari database
-	pertemuanKey := fmt.Sprintf("pertemuan:%d", classID)
+	jadwalKey := fmt.Sprintf("jadwal:%d", classID)
 	go func() {
-		pertemuanData, err := config.RedisDB.Get(config.Ctx, pertemuanKey).Result()
+		jadwalData, err := config.RedisDB.Get(config.Ctx, jadwalKey).Result()
 		var pertemuan models.Pertemuan
+		var jadwal models.Jadwal
 		if err == nil {
 			// Data found in Redis, unmarshal it
-			fmt.Println("data ketemu", pertemuanData)
-			if err := json.Unmarshal([]byte(pertemuanData), &pertemuan); err != nil {
+			fmt.Println("data ketemu", jadwalData)
+			if err := json.Unmarshal([]byte(jadwalData), &jadwal); err != nil {
 				fmt.Println("error", err)
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses data pertemuan dari Redis"})
 
@@ -100,31 +101,36 @@ func ValidateQr(c *gin.Context) {
 		} else {
 			// Data not found in Redis, query the database
 			fmt.Println("data tidak ketemu")
-			if err := config.DB.Preload("Jadwal.Ruangan").Preload("Jadwal.Kelas.MataKuliah").Where("id_pertemuan = ?", classID).First(&pertemuan).Error; err != nil {
+			if err := config.DB.Where("id_pertemuan = ?", classID).First(&pertemuan).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi pertemuan", "err": err.Error()})
+				return
+			}
+
+			if err := config.DB.Preload("Ruangan").Preload("Kelas.MataKuliah").Where("id_jadwal = ?", pertemuan.IDJadwal).First(&jadwal).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi kelas", "err": err.Error()})
 				return
 			}
 			// Store the data in Redis with a TTL of 5 minutes
-			pertemuanJSON, err := json.Marshal(pertemuan)
+			jadwalJSON, err := json.Marshal(jadwal)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses data pertemuan untuk Redis"})
 				return
 			}
-			config.RedisDB.Set(config.Ctx, pertemuanKey, pertemuanJSON, 5*time.Minute)
+			config.RedisDB.Set(config.Ctx, jadwalKey, jadwalJSON, 5*time.Minute)
 		}
-		pertemuanChan <- &pertemuan
+		jadwalChan <- &jadwal
 	}()
 
-	pertemuan := <-pertemuanChan
-	if pertemuan == nil {
+	jadwal := <-jadwalChan
+	if jadwal == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi kelas"})
 		return
 	}
 
 	// Check apakah lokasi presensi sesuai dengan lokasi pertemuan
-	fmt.Println("Pertemuan location:", pertemuan.Jadwal.Ruangan)
+	// fmt.Println("Pertemuan location:", pertemuan.Jadwal.Ruangan)
 	go func() {
-		distance := haversine(req.Latitude, req.Longitude, pertemuan.Jadwal.Ruangan.Latitude.Float64, pertemuan.Jadwal.Ruangan.Longitude.Float64)
+		distance := haversine(req.Latitude, req.Longitude, jadwal.Ruangan.Latitude.Float64, jadwal.Ruangan.Longitude.Float64)
 		distanceChan <- distance
 	}()
 
@@ -153,7 +159,7 @@ func ValidateQr(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan data presensi"})
 		return
 	}
-	var message = " Berhasil presensi di kelas " + pertemuan.Jadwal.Kelas.MataKuliah.NamaMatkul + " - " + pertemuan.Jadwal.Kelas.NamaKelas
+	var message = " Berhasil presensi di kelas " + jadwal.Kelas.MataKuliah.NamaMatkul + " - " + jadwal.Kelas.NamaKelas
 	c.JSON(http.StatusOK, gin.H{"message": message})
 }
 

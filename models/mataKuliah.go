@@ -1,6 +1,7 @@
 package models
 
 type MataKuliah struct {
+	IDMatkul     int    `gorm:"primaryKey;autoIncrement" json:"id_matkul"`
 	KodeMatkul   string `gorm:"primaryKey" json:"kode_matkul"`
 	NamaMatkul   string `json:"nama_matkul"`
 	NamaMatkulEn string `json:"nama_matkul_en"`

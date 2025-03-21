@@ -1,10 +1,10 @@
 package models
 
 type DosenPengampu struct {
-	NIP     string  `gorm:"primaryKey" json:"nip"`
-	IDKelas int     `gorm:"primaryKey" json:"id_kelas"`
-	Status  string  `json:"status"`
-	Kelas   []Kelas `gorm:"foreignKey:IDKelas;references:IDKelas"`
+	NIP     string `gorm:"primaryKey;column:nip" json:"nip"`
+	IDKelas int    `gorm:"primaryKey" json:"id_kelas"`
+	Status  string `json:"status"`
+	Dosen   Dosen  `gorm:"foreignKey:NIP;references:NIP"`
 }
 
 func (DosenPengampu) TableName() string {
