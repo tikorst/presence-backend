@@ -11,7 +11,7 @@ type User struct {
 	TanggalLahir      time.Time `json:"tanggal_lahir"`
 	JenisKelamin      string    `json:"jenis_kelamin"`
 	NoTelepon         string    `json:"no_telepon"`
-	Password          string    `json:"password"`
+	Password          string    `json:"-"`
 	Status            string    `json:"status"`
 	TipeUser          string    `json:"tipe_user"`
 	DeviceID          string    `json:"device_id" gorm:"default:NULL"`

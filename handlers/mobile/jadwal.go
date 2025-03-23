@@ -41,6 +41,7 @@ func Jadwal(c *gin.Context) {
 	if err := config.DB.
 		Preload("MataKuliah").
 		Preload("DosenPengampu.Dosen").
+		Preload("DosenPengampu.Dosen.User").
 		Preload("Jadwal", func(db *gorm.DB) *gorm.DB {
 			return db.Omit("kelas")
 		}).

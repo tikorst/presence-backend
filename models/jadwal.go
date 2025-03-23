@@ -6,10 +6,10 @@ type Jadwal struct {
 	IDKelas     *int        `json:"id_kelas"`
 	IDSesi      *int        `json:"id_sesi"`
 	KodeRuangan string      `json:"kode_ruangan"`
-	Kelas       Kelas       `json:"kelas,omitempty" gorm:"foreignKey:IDKelas" `
-	Sesi        Sesi        `gorm:"foreignKey:IDSesi"`
-	Ruangan     Ruangan     `gorm:"foreignKey:KodeRuangan"`
-	Pertemuan   []Pertemuan `gorm:"foreignKey:IDJadwal"`
+	Kelas       Kelas       `json:"kelas,omitempty" gorm:"foreignKey:IDKelas"`
+	Sesi        Sesi        `gorm:"foreignKey:IDSesi;references:IDSesi"`
+	Ruangan     Ruangan     `gorm:"foreignKey:KodeRuangan;references:KodeRuangan"`
+	Pertemuan   []Pertemuan `gorm:"foreignKey:IDJadwal;references:IDJadwal"`
 }
 
 func (Jadwal) TableName() string {

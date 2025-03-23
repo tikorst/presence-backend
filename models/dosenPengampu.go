@@ -5,6 +5,7 @@ type DosenPengampu struct {
 	IDKelas int    `gorm:"primaryKey" json:"id_kelas"`
 	Status  string `json:"status"`
 	Dosen   Dosen  `gorm:"foreignKey:NIP;references:NIP"`
+	Kelas   Kelas  `gorm:"foreignKey:IDKelas"`
 }
 
 func (DosenPengampu) TableName() string {
