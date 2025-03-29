@@ -1,12 +1,28 @@
 package mobile
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
 	"github.com/tikorst/presence-backend/models"
 	"gorm.io/gorm"
 )
+
+type JadwalResponse struct {
+	NPM            string             `json:"npm"`
+	IDKelas        int                `json:"id_kelas"`
+	IDJadwal       int                `json:"id_jadwal"`
+	Hari           string             `json:"hari"`
+	NamaMataKuliah string             `json:"nama_matkul"`
+	NamaKelas      string             `json:"nama_kelas"`
+	NamaDosen      string             `json:"nama_dosen"`
+	IDRuangan      string             `json:"id_ruangan"`
+	Sesi           string             `json:"sesi"`
+	Pertemuan      []models.Pertemuan `json:"pertemuan"`
+}
 
 func Jadwal(c *gin.Context) {
 	claims, _ := c.Get("claims")
@@ -52,6 +68,32 @@ func Jadwal(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Gagal mengambil data kelas"})
 		return
 	}
-
-	c.JSON(200, gin.H{"erorr": false, "data": kelas})
+	var jadwalResponse []JadwalResponse
+	for _, k := range kelas {
+		for _, j := range k.Jadwal {
+			jamMasuk := formatTime(j.Sesi.JamMasuk)
+			jamKeluar := formatTime(j.Sesi.JamKeluar)
+			jadwalResponse = append(jadwalResponse, JadwalResponse{
+				NPM:            username,
+				IDKelas:        k.IDKelas,
+				IDJadwal:       j.IDJadwal,
+				Hari:           j.Hari,
+				NamaMataKuliah: k.MataKuliah.NamaMatkul,
+				NamaKelas:      k.NamaKelas,
+				NamaDosen:      k.DosenPengampu[0].Dosen.User.Nama,
+				IDRuangan:      j.KodeRuangan,
+				Sesi:           jamMasuk + " - " + jamKeluar,
+				Pertemuan:      j.Pertemuan,
+			})
+		}
+	}
+	fmt.Println("NPM:", username)
+	c.JSON(200, gin.H{"erorr": false, "data": jadwalResponse})
+}
+func formatTime(input string) string {
+	parsedTime, err := time.Parse("15:04:05", input)
+	if err != nil {
+		return input // Return the original input if parsing fails
+	}
+	return parsedTime.Format("15:04")
 }
