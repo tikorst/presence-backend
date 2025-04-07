@@ -25,7 +25,7 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Input tidak valid"})
 			return
 		}
-
+		
 		// Channel untuk komunikasi antar goroutines
 		userChan := make(chan *models.User, 1)
 		errChan := make(chan error, 1)

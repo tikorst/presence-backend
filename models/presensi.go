@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Presensi struct {
-	PresensiID    int       `gorm:"primaryKey;autoIncrement" json:"presensi_id"`
+	IDPresensi    int       `gorm:"primaryKey;autoIncrement" json:"id_presensi"`
 	NPM           string    `json:"npm"`
 	IDPertemuan   int       `json:"id_pertemuan"`
 	WaktuPresensi time.Time `json:"waktu_presensi"`

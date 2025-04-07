@@ -54,6 +54,12 @@ func Jadwal(c *gin.Context) {
 	}
 
 	var kelas []models.Kelas
+	SubQuery := config.DB.
+	Table("semester").
+	Select("id").
+	Order("tahun_ajaran DESC").
+	Limit(1)
+
 	if err := config.DB.
 		Preload("MataKuliah").
 		Preload("DosenPengampu.Dosen").
@@ -64,7 +70,7 @@ func Jadwal(c *gin.Context) {
 		Preload("Jadwal.Sesi").
 		Preload("Jadwal.Ruangan").
 		Preload("Jadwal.Pertemuan").
-		Where("id_kelas IN ?", kelasIDs).Find(&kelas).Error; err != nil {
+		Where("id_kelas IN ? AND id_semester = (?)", kelasIDs, SubQuery).Find(&kelas).Error; err != nil {
 		c.JSON(500, gin.H{"error": "Gagal mengambil data kelas"})
 		return
 	}

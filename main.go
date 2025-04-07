@@ -107,6 +107,7 @@ func main() {
 		protected.POST("/presence", mobile.ValidateQr)
 		protected.GET("/validate", mobile.ValidateToken())
 		protected.GET("/kelas", mobile.Jadwal)
+		protected.GET("/attendance", mobile.Attendance)
 	}
 	port := os.Getenv("PORT")
 	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
