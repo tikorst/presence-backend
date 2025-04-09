@@ -2,6 +2,7 @@ package mobile
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -18,10 +19,6 @@ import (
 // 	"github.com/tikorst/presence-backend/config"
 // 	"github.com/tikorst/presence-backend/models"
 // )
-
-type AttendanceRequest struct {
-	IDSemester int `json:"id_semester"` // Field to accept the semester ID
-}
 
 // type AttendanceResponse struct {
 // 	IDKelas  int `json:"id_kelas"`
@@ -43,7 +40,7 @@ type AttendanceRequest struct {
 // 	var req AttendanceRequest
 // 	c.ShouldBindJSON(&req)
 // 	// If semester_id is empty, use the latest semester
-// 	if req.IDSemester == 0 {
+// 	if idSemester == 0 {
 // 		var latestSemester models.Semester
 // 		if err := config.DB.Debug().
 // 			Last(&latestSemester).Error; err != nil {
@@ -84,7 +81,7 @@ type KelasResponse struct {
 	MataKuliah string        `json:"mata_kuliah"`
 	IDMatkul   int           `json:"id_matkul"`
 	IDSemester int           `json:"id_semester"`
-	Pertemuan  []PresensiRes `json:"pertemuan"`
+	Presensi   []PresensiRes `json:"presensi"`
 }
 
 type PresensiRes struct {
@@ -100,10 +97,16 @@ func Attendance(c *gin.Context) {
 	claims, _ := c.Get("claims")
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)
-	var req AttendanceRequest
-	c.ShouldBindJSON(&req)
+	idSemesterStr := c.Query("id_semester")
 	// If semester_id is empty, use the latest semester
-	if req.IDSemester == 0 {
+	idSemester, err := strconv.Atoi(idSemesterStr)
+
+	if err != nil {
+		// kalau gagal parsing, balikin error
+		idSemester = 0
+	}
+
+	if idSemester == 0 {
 		var latestSemester models.Semester
 		if err := config.DB.Debug().
 			Last(&latestSemester).Error; err != nil {
@@ -111,13 +114,13 @@ func Attendance(c *gin.Context) {
 			return
 		}
 		fmt.Println("id_semester", latestSemester)
-		req.IDSemester = latestSemester.IDSemester
+		idSemester = latestSemester.IDSemester
 	}
 
 	var kelasList []KelasResponse
 	config.DB.Table("kelas").
 		Joins("JOIN mata_kuliah ON kelas.id_matkul = mata_kuliah.id_matkul").
-		Where("kelas.id_semester = ?", req.IDSemester).
+		Where("kelas.id_semester = ?", idSemester).
 		Select("kelas.id_kelas, kelas.nama_kelas, mata_kuliah.nama_matkul as mata_kuliah, kelas.id_matkul, kelas.id_semester").
 		Scan(&kelasList)
 
@@ -126,7 +129,7 @@ func Attendance(c *gin.Context) {
 		Joins("JOIN pertemuan ON presensi.id_pertemuan = pertemuan.id_pertemuan").
 		Joins("JOIN jadwal ON pertemuan.id_jadwal = jadwal.id_jadwal").
 		Joins("JOIN kelas ON jadwal.id_kelas = kelas.id_kelas").
-		Where("kelas.id_semester = ? AND presensi.npm = ?", req.IDSemester, username).
+		Where("kelas.id_semester = ? AND presensi.npm = ?", idSemester, username).
 		Select("presensi.id_presensi, kelas.id_kelas, pertemuan.id_pertemuan, pertemuan.pertemuan_ke, pertemuan.tanggal, presensi.status").
 		Order("pertemuan.tanggal").
 		Scan(&presensiList)
@@ -139,8 +142,8 @@ func Attendance(c *gin.Context) {
 
 	// Inject ke dalam masing-masing kelas
 	for i := range kelasList {
-		kelasList[i].Pertemuan = presensiMap[kelasList[i].IDKelas]
+		kelasList[i].Presensi = presensiMap[kelasList[i].IDKelas]
 	}
 
-	c.JSON(200, kelasList)
+	c.JSON(200, gin.H{"erorr": false, "data": kelasList, "npm": username})
 }

@@ -56,11 +56,11 @@ func Jadwal(c *gin.Context) {
 	var kelas []models.Kelas
 	SubQuery := config.DB.
 	Table("semester").
-	Select("id").
+	Select("id_semester").
 	Order("tahun_ajaran DESC").
 	Limit(1)
 
-	if err := config.DB.
+	if err := config.DB.Debug().
 		Preload("MataKuliah").
 		Preload("DosenPengampu.Dosen").
 		Preload("DosenPengampu.Dosen.User").
