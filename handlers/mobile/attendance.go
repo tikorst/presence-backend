@@ -120,7 +120,8 @@ func Attendance(c *gin.Context) {
 	var kelasList []KelasResponse
 	config.DB.Table("kelas").
 		Joins("JOIN mata_kuliah ON kelas.id_matkul = mata_kuliah.id_matkul").
-		Where("kelas.id_semester = ?", idSemester).
+		Joins("JOIN mahasiswa_kelas ON kelas.id_kelas = mahasiswa_kelas.id_kelas").
+		Where("kelas.id_semester = ? AND mahasiswa_kelas.npm = ?", idSemester, username).
 		Select("kelas.id_kelas, kelas.nama_kelas, mata_kuliah.nama_matkul as mata_kuliah, kelas.id_matkul, kelas.id_semester").
 		Scan(&kelasList)
 
