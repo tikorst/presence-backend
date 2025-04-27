@@ -9,6 +9,7 @@ type User struct {
 	Nama              string    `json:"nama"`
 	Alamat            string    `json:"alamat"`
 	TanggalLahir      time.Time `json:"tanggal_lahir"`
+	TempatLahir       string    `json:"tempat_lahir"`
 	JenisKelamin      string    `json:"jenis_kelamin"`
 	NoTelepon         string    `json:"no_telepon"`
 	Password          string    `json:"-"`

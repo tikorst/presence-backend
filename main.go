@@ -111,6 +111,7 @@ func main() {
 		protected.GET("/semester", mobile.Semester)
 		protected.GET("/grade", mobile.Grade)
 		protected.GET("/allgrade", mobile.AllGrade)
+		protected.GET("/profile", mobile.Profile)
 	}
 	port := os.Getenv("PORT")
 	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
