@@ -1,7 +1,6 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +11,7 @@ import (
 func Meetings() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		classID := c.Param("classID")
+
 		var jadwal []models.Jadwal
 		if err := config.DB.Debug().
 			Preload("Ruangan").
@@ -21,7 +21,6 @@ func Meetings() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch schedules"})
 			return
 		}
-		fmt.Println("jadwal", jadwal)
 		// Extract all IDJadwal from the jadwal slice
 		// var jadwalIDs []int
 		// for _, j := range jadwal {

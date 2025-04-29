@@ -45,7 +45,7 @@ func Login() gin.HandlerFunc {
 		case user = <-userChan:
 			// User ditemukan, lanjut proses
 		case <-errChan:
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Username atau password salah"})
 			return
 		}
 
