@@ -31,13 +31,13 @@ func ValidateQr(c *gin.Context) {
 	}
 	fmt.Println("Location data:", req.Latitude, req.Longitude)
 	// check if the QR code is valid in Redis
-	classIDStr, err := config.RedisDB.Get(config.Ctx, req.QRCode).Result()
+	pertemuanIDStr, err := config.RedisDB.Get(config.Ctx, req.QRCode).Result()
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "QR code tidak valid"})
 		return
 	}
 	// Convert the classID to int
-	classID, err := strconv.Atoi(classIDStr)
+	pertemuanID, err := strconv.Atoi(pertemuanIDStr)
 	// Get the username(npm) from the JWT claims
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengonversi classID"})
@@ -54,7 +54,7 @@ func ValidateQr(c *gin.Context) {
 
 	// Check apakah mahasiswa sudah melakukan presensi
 	go func() {
-		if err := config.DB.Where("npm = ? AND id_pertemuan = ?", username, classID).First(&models.Presensi{}).Error; err == nil {
+		if err := config.DB.Where("npm = ? AND id_pertemuan = ?", username, pertemuanID).First(&models.Presensi{}).Error; err == nil {
 			presensiChan <- fmt.Errorf("Kamu sudah melakukan presensi")
 			return
 		}
@@ -68,23 +68,9 @@ func ValidateQr(c *gin.Context) {
 	}
 
 	// Check apakah mahasiswa terdaftar di kelas tersebut
-	go func() {
-		var mahasiswaKelas models.MahasiswaKelas
-		if err := config.DB.Where("npm = ? AND id_kelas = ? AND status = ?", username, classID, "aktif").First(&mahasiswaKelas).Error; err != nil {
-			mahasiswaKelasChan <- nil
-			return
-		}
-		mahasiswaKelasChan <- &mahasiswaKelas
-	}()
-
-	mahasiswaKelas := <-mahasiswaKelasChan
-	if mahasiswaKelas == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kamu tidak terdaftar di kelas ini"})
-		return
-	}
 
 	// Ambil data pertemuan dari database
-	jadwalKey := fmt.Sprintf("jadwal:%d", classID)
+	jadwalKey := fmt.Sprintf("jadwal1:%d", pertemuanID)
 	go func() {
 		jadwalData, err := config.RedisDB.Get(config.Ctx, jadwalKey).Result()
 		var pertemuan models.Pertemuan
@@ -101,16 +87,18 @@ func ValidateQr(c *gin.Context) {
 		} else {
 			// Data not found in Redis, query the database
 			fmt.Println("data tidak ketemu")
-			if err := config.DB.Where("id_pertemuan = ?", classID).First(&pertemuan).Error; err != nil {
+			if err := config.DB.Where("id_pertemuan = ?", pertemuanID).First(&pertemuan).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi pertemuan", "err": err.Error()})
 				return
 			}
 
-			if err := config.DB.Preload("Ruangan").Preload("Kelas.MataKuliah").Where("id_jadwal = ?", pertemuan.IDJadwal).First(&jadwal).Error; err != nil {
+			if err := config.DB.Debug().Preload("Ruangan").Preload("Kelas.MataKuliah").Where("id_jadwal = ?", pertemuan.IDJadwal).First(&jadwal).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi kelas", "err": err.Error()})
 				return
 			}
+			fmt.Println(&jadwal)
 			// Store the data in Redis with a TTL of 5 minutes
+
 			jadwalJSON, err := json.Marshal(jadwal)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses data pertemuan untuk Redis"})
@@ -124,6 +112,21 @@ func ValidateQr(c *gin.Context) {
 	jadwal := <-jadwalChan
 	if jadwal == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi kelas"})
+		return
+	}
+
+	go func() {
+		var mahasiswaKelas models.MahasiswaKelas
+		if err := config.DB.Where("npm = ? AND id_kelas = ? AND status = ?", username, jadwal.IDKelas, "aktif").First(&mahasiswaKelas).Error; err != nil {
+			mahasiswaKelasChan <- nil
+			return
+		}
+		mahasiswaKelasChan <- &mahasiswaKelas
+	}()
+
+	mahasiswaKelas := <-mahasiswaKelasChan
+	if mahasiswaKelas == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kamu tidak terdaftar di kelas ini"})
 		return
 	}
 
@@ -151,7 +154,7 @@ func ValidateQr(c *gin.Context) {
 
 	attendance := models.Presensi{
 		NPM:           username,
-		IDPertemuan:   classID,
+		IDPertemuan:   pertemuanID,
 		WaktuPresensi: time.Now(),
 		Status:        "hadir",
 	}

@@ -25,7 +25,7 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Input tidak valid"})
 			return
 		}
-		
+
 		// Channel untuk komunikasi antar goroutines
 		userChan := make(chan *models.User, 1)
 		errChan := make(chan error, 1)
@@ -58,27 +58,34 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Username atau password salah"})
 		}
 
-		// Async Update Device ID jika berbeda
-		// if user.DeviceID != req.DeviceID {
-		// 	deviceChan := make(chan error, 1)
-		// 	go func() {
-		// 		// var otherUser models.User
-		// 		err := config.DB.Model(user).Update("device_id", req.DeviceID).Where("id_user = ?", user.IDUser).Error
-		// 		deviceChan <- err // True jika ada user lain dengan device yang sama
-		// 	}()
+		// Cek device_id
+		if user.DeviceID != req.DeviceID {
+			// Cek apakah device_id sudah dipakai user lain
+			var otherUserCount int64
+			if err := config.DB.Model(&models.User{}).Where("device_id = ? AND username != ?", req.DeviceID, req.Username).Count(&otherUserCount).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": true, "message": "Gagal memeriksa perangkat"})
+				return
+			}
+			if otherUserCount > 0 {
+				c.JSON(http.StatusForbidden, gin.H{"error": true, "message": "Perangkat sudah digunakan oleh user lain"})
+				return
+			}
 
-		// 	// Cek hasil device check
+			// Cek waktu terakhir ganti device
+			if user.DeviceIDUpdatedAt != nil && time.Since(*user.DeviceIDUpdatedAt).Hours() < 24 {
+				c.JSON(http.StatusForbidden, gin.H{"error": true, "message": "Perangkat baru hanya bisa digunakan setelah 24 jam. Lakukan reset device."})
+				return
+			}
 
-		// 	if deviceErr := <-deviceChan; deviceErr != nil {
-		// 		if gorm.ErrDuplicatedKey == deviceErr {
-		// 			c.JSON(http.StatusForbidden, gin.H{"error": "Device sudah digunakan oleh user lain"})
-		// 			return
-		// 		} else {
-		// 			c.JSON(http.StatusForbidden, gin.H{"error": "Unknown Error"})
-		// 			return
-		// 		}
-		// 	}
-		// }
+			// Update device_id dan last_device_change
+			if err := config.DB.Model(user).Updates(map[string]interface{}{
+				"device_id":            req.DeviceID,
+				"device_id_updated_at": time.Now(),
+			}).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": true, "message": "Gagal memperbarui perangkat"})
+				return
+			}
+		}
 
 		// Generate JWT Token
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -100,7 +107,7 @@ func Login() gin.HandlerFunc {
 		loginResponse := &LoginResponse{
 			LoginResult: loginResult,
 			Error:       false,
-			Message:     "Login successful",
+			Message:     "Login berhasil",
 		}
 		// Kirim response ke client
 		c.JSON(http.StatusOK,
