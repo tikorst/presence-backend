@@ -49,8 +49,8 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		if user.TipeUser != "Dosen" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Website ini hanya untuk dosen"})
+		if user.TipeUser != "Dosen" && user.TipeUser != "Admin" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Website ini hanya untuk Dosen dan Admin"})
 			return
 		}
 		// Async Password Verification
@@ -66,6 +66,7 @@ func Login() gin.HandlerFunc {
 		// Generate JWT Token
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub": user.Username,
+			"role": user.TipeUser,
 			"exp": time.Now().Add(1 * time.Hour).Unix(),
 		})
 

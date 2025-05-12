@@ -15,6 +15,8 @@ func Classes() gin.HandlerFunc {
         claims, _ := c.Get("claims")
         jwtClaims := claims.(jwt.MapClaims)
         username := jwtClaims["sub"].(string)
+
+        user := models.User{}
         var latestSemester models.Semester
         if err := config.DB.Debug().
             Last(&latestSemester).Error; err != nil {
@@ -31,6 +33,13 @@ func Classes() gin.HandlerFunc {
             return
         }
 
-        c.JSON(http.StatusOK, gin.H{"classes": classes})
+        if err:= config.DB.Debug().
+            Where("username = ?", username).
+            First(&user).Error; err != nil {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})
+            return
+        }
+
+        c.JSON(http.StatusOK, gin.H{"classes": classes, "user" : user})
     }
 }

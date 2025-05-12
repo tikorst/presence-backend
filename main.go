@@ -93,14 +93,22 @@ func main() {
 
 	// Web
 	r.POST("/web/login", web.Login())
-	protectedWeb := r.Group("/web").Use(middleware.Web())
+	protectedWeb := r.Group("/web")
 	{
+		protectedWeb.Use(middleware.Web())
 		protectedWeb.GET("/classes", web.Classes())
 		protectedWeb.GET("/classes/:classID/meetings", web.Meetings())
 		protectedWeb.GET("/generate_qr/:classID/:meetingID", web.GenerateQR)
 		protectedWeb.GET("/attendance/:classID/:meetingID", web.PresenceData)
-	}
+		protectedWeb.GET("verify-role", web.VerifyRole())
 
+		adminRoutes := protectedWeb.Group("/admin").Use(middleware.AdminOnly())
+    	{
+			adminRoutes.GET("/users", web.GetUsers())
+			adminRoutes.POST("/reset", web.ResetDeviceID)
+    	}
+	}
+	
 	// Protected routes
 	protected := r.Group("/api").Use(middleware.Auth())
 	{
