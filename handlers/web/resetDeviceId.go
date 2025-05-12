@@ -19,7 +19,7 @@ func ResetDeviceID(c *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Model(&models.User{}).Where("username = ?", req.Username).Update("device_id", nil).Error; err != nil {
+	if err := config.DB.Model(&models.User{}).Where("username = ?", req.Username).Update("device_id", nil).Update("device_id_updated_at", nil).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset device ID"})
 		return
 	}
