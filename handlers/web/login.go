@@ -65,9 +65,9 @@ func Login() gin.HandlerFunc {
 
 		// Generate JWT Token
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"sub": user.Username,
+			"sub":  user.Username,
 			"role": user.TipeUser,
-			"exp": time.Now().Add(1 * time.Hour).Unix(),
+			"exp":  time.Now().Add(1 * time.Hour).Unix(),
 		})
 
 		tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
@@ -75,7 +75,8 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token", "err": err})
 			return
 		}
-		c.SetCookie("token", tokenString, 3600, "/", "localhost", true, false)
+		// c.SetCookie("token", tokenString, 3600, "/", "", true, false)
+		c.Header("Set-Cookie", "token="+tokenString+"; Path=/; Domain=.tikorst.cloud; Max-Age=3600; Secure; SameSite=None")
 		// Kirim response ke client
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Login berhasil",

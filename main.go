@@ -76,7 +76,7 @@ func main() {
 		fmt.Println("RedisDB is nil! Initialization failed.")
 	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     []string{"http://localhost:5173", "https://tikorst.github.io", "https://presence-web.tikorst.cloud"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -103,12 +103,12 @@ func main() {
 		protectedWeb.GET("verify-role", web.VerifyRole())
 
 		adminRoutes := protectedWeb.Group("/admin").Use(middleware.AdminOnly())
-    	{
+		{
 			adminRoutes.GET("/users", web.GetUsers())
 			adminRoutes.POST("/reset", web.ResetDeviceID)
-    	}
+		}
 	}
-	
+
 	// Protected routes
 	protected := r.Group("/api").Use(middleware.Auth())
 	{
