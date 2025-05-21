@@ -1,48 +1,3 @@
-// package main
-
-// import (
-// 	"fmt"
-// 	"runtime"
-// 	"time"
-
-// 	"github.com/gofiber/fiber/v2"
-// 	"github.com/joho/godotenv"
-// 	"github.com/tikorst/presence-backend/config"
-// 	"github.com/tikorst/presence-backend/handlers"
-// )
-
-// func init() {
-// 	err := godotenv.Load()
-// 	if err != nil {
-// 		panic("Failed to load .env file")
-// 	}
-// 	config.InitTLS()
-// 	config.ConnectDB()
-// 	fmt.Println("🖥️ CPU Cores Used:", runtime.NumCPU())
-// 	fmt.Println("🔄 Goroutines at startup:", runtime.NumGoroutine())
-// }
-
-// func main() {
-// 	runtime.GOMAXPROCS(20)
-// 	r := fiber.New()
-// 	// r(gin.ReleaseMode)
-// 	// Public routes
-// 	r.Get("/login", handlers.Login1())
-// 	// Protected routes
-// 	// protected := r.Group("/api").Use(middleware.Auth())
-// 	// {
-// 	// 	protected.POST("/presensi", handlers.ScanQR())
-// 	// }
-// 	go func() {
-// 		for {
-// 			fmt.Println("🔄 Goroutines:", runtime.NumGoroutine())
-// 			fmt.Println("🖥️ CPU Cores Used:", runtime.GOMAXPROCS(0))
-// 			time.Sleep(1000 * time.Millisecond) // Log every 5 seconds
-// 		}
-// 	}()
-// 	r.Listen(":8080") // Jalankan di port 8080
-// }
-
 package main
 
 import (
@@ -85,11 +40,7 @@ func main() {
 	}))
 
 	// API
-	// r.GET("/ping", handlers.Ping())
 	r.POST("/login", mobile.Login())
-	// r.GET("/login", handlers.Login2())
-	// r.GET("/frontend", handlers.Frontend())
-	// r.GET("/getAllRedis", handlers.GetAll)
 
 	// Web
 	r.POST("/web/login", web.Login())

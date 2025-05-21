@@ -3,6 +3,8 @@ package mobile
 import (
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -10,78 +12,13 @@ import (
 	"github.com/tikorst/presence-backend/models"
 )
 
-// import (
-// 	"fmt"
-// 	"time"
-
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/golang-jwt/jwt/v5"
-// 	"github.com/tikorst/presence-backend/config"
-// 	"github.com/tikorst/presence-backend/models"
-// )
-
-// type AttendanceResponse struct {
-// 	IDKelas  int `json:"id_kelas"`
-// 	IDJadwal int `json:"id_jadwal"`
-// }
-// type PresensiRingkas struct {
-// 	NamaMatkul     string    `json:"nama_matkul"`
-// 	NamaKelas      string    `json:"nama_kelas"`
-// 	Tanggal        time.Time `json:"tanggal"`
-// 	StatusPresensi string    `json:"status"`
-// }
-
-// func Attendance(c *gin.Context) {
-// 	claims, _ := c.Get("claims")
-// 	jwtClaims := claims.(jwt.MapClaims)
-// 	username := jwtClaims["sub"].(string)
-
-// 	// Get the semester ID from query parameters
-// 	var req AttendanceRequest
-// 	c.ShouldBindJSON(&req)
-// 	// If semester_id is empty, use the latest semester
-// 	if idSemester == 0 {
-// 		var latestSemester models.Semester
-// 		if err := config.DB.Debug().
-// 			Last(&latestSemester).Error; err != nil {
-// 			c.JSON(500, gin.H{"error": "Gagal mengambil semester terakhir"})
-// 			return
-// 		}
-// 		fmt.Println("id_semester", latestSemester)
-// 		req.IDSemester = latestSemester.IDSemester
-// 	}
-
-// 	// Mengambil data kelas yang diambil mahasiswa
-
-// 	var hasil []PresensiRingkas
-// 	err := config.DB.Debug().
-// 		Table("presensi").
-// 		Select(`mata_kuliah.nama_matkul,
-// 			kelas.nama_kelas,
-// 			pertemuan.tanggal,
-// 			presensi.status`).
-// 		Joins("JOIN pertemuan ON presensi.id_pertemuan = pertemuan.id_pertemuan").
-// 		Joins("JOIN jadwal ON pertemuan.id_jadwal = jadwal.id_jadwal").
-// 		Joins("JOIN kelas ON jadwal.id_kelas = kelas.id_kelas").
-// 		Joins("JOIN mata_kuliah ON kelas.id_matkul = mata_kuliah.id_matkul").
-// 		Where("kelas.id_semester = ? AND presensi.npm = ?", req.IDSemester, username).
-// 		Scan(&hasil).Error
-
-// 	if err != nil {
-// 		c.JSON(500, gin.H{"error": "Gagal mengambil presensi"})
-// 		return
-// 	}
-// 	fmt.Println("id_semester", req.IDSemester)
-// 	c.JSON(200, gin.H{"Error": false, "Message": "Berhasil Mengambil data presensi", "data": hasil})
-// }
-
 type KelasResponse struct {
 	IDKelas    int           `json:"id_kelas"`
 	NamaKelas  string        `json:"nama_kelas"`
 	MataKuliah string        `json:"mata_kuliah"`
 	IDMatkul   int           `json:"id_matkul"`
 	IDSemester int           `json:"id_semester"`
-	Presensi   []PresensiRes `json:"presensi"`
+	Presensi   []PresensiRes `json:"presensi" gorm:"-"`
 }
 
 type PresensiRes struct {
@@ -126,16 +63,30 @@ func Attendance(c *gin.Context) {
 		Scan(&kelasList)
 
 	var presensiList []PresensiRes
-	config.DB.Table("presensi").Debug().
-		Joins("JOIN pertemuan ON presensi.id_pertemuan = pertemuan.id_pertemuan").
+	today := time.Now().Format("2006-01-02")
+
+	config.DB.Table("pertemuan").
+		Select(`
+            COALESCE(presensi.id_presensi, 0) as id_presensi,
+            kelas.id_kelas,
+            pertemuan.id_pertemuan,
+            pertemuan.pertemuan_ke,
+            pertemuan.tanggal,
+            COALESCE(presensi.status, 'Alpha') as status
+        `).
 		Joins("JOIN jadwal ON pertemuan.id_jadwal = jadwal.id_jadwal").
 		Joins("JOIN kelas ON jadwal.id_kelas = kelas.id_kelas").
-		Where("kelas.id_semester = ? AND presensi.npm = ?", idSemester, username).
-		Select("presensi.id_presensi, kelas.id_kelas, pertemuan.id_pertemuan, pertemuan.pertemuan_ke, pertemuan.tanggal, presensi.status").
+		Joins("LEFT JOIN presensi ON presensi.id_pertemuan = pertemuan.id_pertemuan AND presensi.npm = ?", username).
+		Where("kelas.id_semester = ? AND (pertemuan.tanggal < ? OR pertemuan.status = ?)", idSemester, today, "selesai").
 		Order("pertemuan.tanggal").
 		Scan(&presensiList)
 
 	// Kelompokkan presensi berdasarkan id_kelas
+	for i := range presensiList {
+		if presensiList[i].Status != "" {
+			presensiList[i].Status = strings.ToUpper(presensiList[i].Status[:1]) + strings.ToLower(presensiList[i].Status[1:])
+		}
+	}
 	presensiMap := make(map[int][]PresensiRes)
 	for _, p := range presensiList {
 		presensiMap[p.IDKelas] = append(presensiMap[p.IDKelas], p)

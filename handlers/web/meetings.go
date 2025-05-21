@@ -21,21 +21,6 @@ func Meetings() gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch schedules"})
 			return
 		}
-		// Extract all IDJadwal from the jadwal slice
-		// var jadwalIDs []int
-		// for _, j := range jadwal {
-		// 	jadwalIDs = append(jadwalIDs, j.IDJadwal)
-		// }
-
-		// // Fetch all pertemuan based on the extracted IDJadwal
-		// var pertemuan []models.Pertemuan
-		// if err := config.DB.Debug().Where("id_jadwal = ?", jadwal[0].IDJadwal).
-		// 	Preload("Jadwal.Ruangan").
-		// 	Preload("Jadwal.Sesi").
-		// 	Preload("Jadwal.Kelas").Find(&pertemuan).Error; err != nil {
-		// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch meetings"})
-		// 	return
-		// }
 
 		c.JSON(http.StatusOK, gin.H{"Status": "Berhasil",
 			"data": jadwal})

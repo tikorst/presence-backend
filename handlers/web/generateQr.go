@@ -84,56 +84,6 @@ func GenerateQR(c *gin.Context) {
 		}
 	}()
 
-	// Goroutine untuk mengirim data presensi setiap 5 detik
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-done:
-	// 			log.Println("WebSocket closed, stopping attendance updates.")
-	// 			return
-	// 		default:
-	// 			var mahasiswaKelas []models.MahasiswaKelas
-	// 			if err := config.DB.Preload("Mahasiswa").Preload("Mahasiswa.User").Where("id_kelas = ? AND status = ?", classID, "aktif").Find(&mahasiswaKelas).Order("npm DESC").Error; err != nil {
-	// 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Tidak ada mahasiswa yang terdaftar di kelas ini"})
-	// 				return
-	// 			}
-	// 			var presensi []models.Presensi
-	// 			if err := config.DB.Where("id_pertemuan = ?", meetingID).Find(&presensi).Error; err != nil {
-	// 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Belum ada presensi untuk pertemuan ini"})
-	// 				return
-	// 			}
-
-	// 			attendanceMap := make(map[string]string)
-	// 			for _, mhs := range mahasiswaKelas {
-	// 				attendanceMap[mhs.Mahasiswa.User.Nama] = "Alpha"
-	// 			}
-
-	// 			for _, pres := range presensi {
-	// 				attendanceMap[pres.NPM] = "Hadir"
-	// 			}
-
-	// 			// Create a response data structure
-	// 			responseData := make([]map[string]string, 0)
-	// 			for _, mhs := range mahasiswaKelas {
-	// 				responseData = append(responseData, map[string]string{
-	// 					"nama":   mhs.Mahasiswa.User.Nama,
-	// 					"status": attendanceMap[mhs.NPM],
-	// 				})
-	// 			}
-
-	// 			// Send attendance data
-	// 			err = ws.WriteJSON(map[string]interface{}{"attendance": responseData})
-	// 			if err != nil {
-	// 				log.Println("Failed to send message, closing WebSocket", err)
-	// 				return
-	// 			}
-
-	// 			time.Sleep(5 * time.Second)
-	// 		}
-	// 	}
-	// }()
-
-	// Block the main goroutine until the WebSocket is closed or expired
 	select {
 	case <-done:
 	case <-time.After(3 * time.Minute):
