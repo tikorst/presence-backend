@@ -5,3 +5,4 @@
 *.exe~
 presence-backend.exe
 presence-backend.exe~
+*.json
