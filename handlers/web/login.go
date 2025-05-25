@@ -75,8 +75,8 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token", "err": err})
 			return
 		}
-		// c.SetCookie("token", tokenString, 3600, "/", "", true, false)
-		c.Header("Set-Cookie", "token="+tokenString+"; Path=/; Domain=.tikorst.cloud; Max-Age=3600; Secure; SameSite=None")
+		c.SetCookie("token", tokenString, 3600, "/", "", true, false)
+		// c.Header("Set-Cookie", "token="+tokenString+"; Path=/; Domain=.tikorst.cloud; Max-Age=3600; Secure; SameSite=None")
 		// Kirim response ke client
 		c.JSON(http.StatusOK, gin.H{
 			"message": "Login berhasil",

@@ -73,5 +73,5 @@ func main() {
 		protected.GET("/profile", mobile.Profile)
 	}
 	port := os.Getenv("PORT")
-	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
+	r.Run("localhost:" + port) // Jalankan di port 8080
 }
