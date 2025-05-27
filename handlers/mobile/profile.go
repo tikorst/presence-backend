@@ -1,9 +1,7 @@
 package mobile
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"time"
 
@@ -12,8 +10,8 @@ import (
 	"github.com/tikorst/presence-backend/config"
 	"github.com/tikorst/presence-backend/models"
 
+
 	"cloud.google.com/go/storage"
-	"google.golang.org/api/option"
 )
 
 type ProfileResponse struct {
@@ -42,27 +40,13 @@ func Profile(c *gin.Context) {
 		return
 	}
 
-	jsonCreds := os.Getenv("GCP_SERVICE_ACCOUNT_JSON")
-	if jsonCreds == "" {
-		c.JSON(500, gin.H{"error": true, "message": "GCP_SERVICE_ACCOUNT_JSON env var is empty"})
-		return
-	}
-
-	ctx := context.Background()
-
-	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(jsonCreds)))
-	if err != nil {
-		c.JSON(500, gin.H{"error": true, "message": fmt.Sprintf("failed to create storage client: %v", err)})
-		return
-	}
-	defer client.Close()
 
 	type serviceAccount struct {
 		ClientEmail string `json:"client_email"`
 		PrivateKey  string `json:"private_key"`
 	}
 	var sa serviceAccount
-	if err := json.Unmarshal([]byte(jsonCreds), &sa); err != nil {
+	if err := json.Unmarshal([]byte(config.JSONCreds), &sa); err != nil {
 		c.JSON(500, gin.H{"error": true, "message": "GCP_SERVICE_ACCOUNT_JSON env var is empty"})
 		return
 	}

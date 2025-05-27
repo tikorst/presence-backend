@@ -20,6 +20,7 @@ func init() {
 	config.InitTLS()
 	config.ConnectDB()
 	config.ConnectRedis()
+	config.ConnectStorage()
 	godotenv.Load()
 }
 func main() {
@@ -31,7 +32,7 @@ func main() {
 		fmt.Println("RedisDB is nil! Initialization failed.")
 	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "https://tikorst.github.io", "https://presence-web.tikorst.cloud"},
+		AllowOrigins:     []string{"https://presence-web.tikorst.cloud"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -73,5 +74,5 @@ func main() {
 		protected.GET("/profile", mobile.Profile)
 	}
 	port := os.Getenv("PORT")
-	r.Run("localhost:" + port) // Jalankan di port 8080
+	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
 }

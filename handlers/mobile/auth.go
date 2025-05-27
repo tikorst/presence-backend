@@ -56,8 +56,13 @@ func Login() gin.HandlerFunc {
 		// Cek hasil verifikasi password
 		if passErr != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Username atau password salah"})
+			return
 		}
 
+		if user.TipeUser != "Mahasiswa" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Aplikasi ini hanya untuk Mahasiswa"})
+			return
+		}
 		// Cek device_id
 		if user.DeviceID != req.DeviceID {
 			// Cek apakah device_id sudah dipakai user lain

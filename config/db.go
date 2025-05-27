@@ -57,7 +57,9 @@ func ConnectDB() {
 
 	// Define DSN with custom TLS
 	dsn := os.Getenv("DB_DSN")
-
+	if dsn == "" {
+		panic("DB_DSN environment variable is not set")
+	}
 	var err error
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		TranslateError: true,
