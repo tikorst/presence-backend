@@ -24,7 +24,7 @@ type JadwalResponse struct {
 	Pertemuan      []models.Pertemuan `json:"pertemuan"`
 }
 
-func Jadwal(c *gin.Context) {
+func Schedules(c *gin.Context) {
 	claims, _ := c.Get("claims")
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)
@@ -60,7 +60,7 @@ func Jadwal(c *gin.Context) {
 	Order("tahun_ajaran DESC").
 	Limit(1)
 
-	if err := config.DB.Debug().
+	if err := config.DB.
 		Preload("MataKuliah").
 		Preload("DosenPengampu.Dosen").
 		Preload("DosenPengampu.Dosen.User").

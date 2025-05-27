@@ -39,7 +39,7 @@ func Grade(c *gin.Context) {
 
 	if idSemester == 0 {
 		var latestSemester models.Semester
-		if err := config.DB.Debug().
+		if err := config.DB.
 			Last(&latestSemester).Error; err != nil {
 			c.JSON(500, gin.H{"error": "Gagal mengambil semester terakhir"})
 			return
@@ -49,7 +49,7 @@ func Grade(c *gin.Context) {
 	}
 
 	var gradeList []GradeResponse
-	err = config.DB.Table("kelas").Debug().
+	err = config.DB.Table("kelas").
 		Joins("JOIN mahasiswa_kelas ON kelas.id_kelas = mahasiswa_kelas.id_kelas").
 		Joins("JOIN nilai ON mahasiswa_kelas.id_kelas = nilai.id_kelas AND mahasiswa_kelas.npm = nilai.npm").
 		Joins("JOIN mata_kuliah ON kelas.id_matkul = mata_kuliah.id_matkul").

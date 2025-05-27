@@ -92,7 +92,7 @@ func ValidateQr(c *gin.Context) {
 				return
 			}
 
-			if err := config.DB.Debug().Preload("Ruangan").Preload("Kelas.MataKuliah").Where("id_jadwal = ?", pertemuan.IDJadwal).First(&jadwal).Error; err != nil {
+			if err := config.DB.Preload("Ruangan").Preload("Kelas.MataKuliah").Where("id_jadwal = ?", pertemuan.IDJadwal).First(&jadwal).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi kelas", "err": err.Error()})
 				return
 			}

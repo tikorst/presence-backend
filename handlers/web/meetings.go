@@ -13,7 +13,7 @@ func Meetings() gin.HandlerFunc {
 		classID := c.Param("classID")
 
 		var jadwal []models.Jadwal
-		if err := config.DB.Debug().
+		if err := config.DB.
 			Preload("Ruangan").
 			Preload("Sesi").
 			Preload("Pertemuan").

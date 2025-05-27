@@ -47,7 +47,7 @@ func GetUsers() gin.HandlerFunc {
 		var users []models.User
 		var totalUsers int64
 
-		dbQuery := config.DB.Debug().Where("tipe_user = ?", "Mahasiswa")
+		dbQuery := config.DB.Where("tipe_user = ?", "Mahasiswa")
 
 		fmt.Printf("Backend received: Page=%d, Limit=%d, SearchQuery='%s'\n", page, limit, searchQuery)
 

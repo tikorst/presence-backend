@@ -31,7 +31,7 @@ func Profile(c *gin.Context) {
 	username := jwtClaims["sub"].(string)
 
 	mhs := models.Mahasiswa{}
-	if err := config.DB.Debug().
+	if err := config.DB.
 		Model(&mhs).Where("npm = ?", username).
 		Preload("User").
 		Preload("ProgramStudi").

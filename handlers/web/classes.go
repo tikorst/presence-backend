@@ -18,12 +18,12 @@ func Classes() gin.HandlerFunc {
 
         user := models.User{}
         var latestSemester models.Semester
-        if err := config.DB.Debug().
+        if err := config.DB.
             Last(&latestSemester).Error; err != nil {
             c.JSON(500, gin.H{"error": "Gagal mengambil semester terakhir"})
             return
         }
-        if err := config.DB.Debug().
+        if err := config.DB.
             Joins("JOIN dosen_pengampu ON dosen_pengampu.id_kelas = kelas.id_kelas").
             Preload("MataKuliah").
             Preload("DosenPengampu").
@@ -33,7 +33,7 @@ func Classes() gin.HandlerFunc {
             return
         }
 
-        if err:= config.DB.Debug().
+        if err:= config.DB.
             Where("username = ?", username).
             First(&user).Error; err != nil {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})

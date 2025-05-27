@@ -66,7 +66,7 @@ func main() {
 	{
 		protected.POST("/presence", mobile.ValidateQr)
 		protected.GET("/validate", mobile.ValidateToken())
-		protected.GET("/kelas", mobile.Jadwal)
+		protected.GET("/class", mobile.Schedules)
 		protected.GET("/attendance", mobile.Attendance)
 		protected.GET("/semester", mobile.Semester)
 		protected.GET("/grade", mobile.Grade)

@@ -45,7 +45,7 @@ func Attendance(c *gin.Context) {
 
 	if idSemester == 0 {
 		var latestSemester models.Semester
-		if err := config.DB.Debug().
+		if err := config.DB.
 			Last(&latestSemester).Error; err != nil {
 			c.JSON(500, gin.H{"error": "Gagal mengambil semester terakhir"})
 			return
