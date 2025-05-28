@@ -1,6 +1,7 @@
 package mobile
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -21,78 +22,69 @@ type LoginRequest struct {
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginRequest
-		if err := c.Bind(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Input tidak valid"})
+		if err := c.BindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, LoginResponse{Error: true, Message: "Input tidak valid"})
 			return
 		}
 
-		// Channel untuk komunikasi antar goroutines
-		userChan := make(chan *models.User, 1)
-		errChan := make(chan error, 1)
+		var user models.User
+		if err := config.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+			log.Printf("Login Error: User '%s' not found or DB error: %v", req.Username, err)
+			c.JSON(http.StatusUnauthorized, LoginResponse{Error: true, Message: "Username atau password salah"})
+			return
+		}
 
-		// Async Query: Fetch User dari Database
+		passVerifyChan := make(chan error, 1)
+
 		go func() {
-			var user models.User
-			if err := config.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-				errChan <- err
-				return
-			}
-			userChan <- &user
+			passVerifyChan <- bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 		}()
 
-		// Wait for result dari user query
-		var user *models.User
 		select {
-		case user = <-userChan:
-			// User ditemukan, lanjut proses
-		case <-errChan:
-			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Username atau password salah"})
-			return
-		}
-
-		// Async Password Verification
-
-		passErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
-		// Cek hasil verifikasi password
-		if passErr != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Username atau password salah"})
+		case err := <-passVerifyChan:
+			if err != nil {
+				log.Printf("Login Error: Password mismatch for user '%s'", req.Username)
+				c.JSON(http.StatusUnauthorized, LoginResponse{Error: true, Message: "Username atau password salah"})
+				return
+			}
+		case <-time.After(5 * time.Second):
+			log.Printf("Login Error: Password verification timeout for user '%s'", req.Username)
+			c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal memverifikasi password (timeout)"})
 			return
 		}
 
 		if user.TipeUser != "Mahasiswa" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": true, "message": "Aplikasi ini hanya untuk Mahasiswa"})
+			c.JSON(http.StatusUnauthorized, LoginResponse{Error: true, Message: "Aplikasi ini hanya untuk Mahasiswa"})
 			return
 		}
-		// Cek device_id
+
 		if user.DeviceID != req.DeviceID {
-			// Cek apakah device_id sudah dipakai user lain
 			var otherUserCount int64
 			if err := config.DB.Model(&models.User{}).Where("device_id = ? AND username != ?", req.DeviceID, req.Username).Count(&otherUserCount).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": true, "message": "Gagal memeriksa perangkat"})
+				log.Printf("Login Error: Failed to check device_id for user '%s': %v", req.Username, err)
+				c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal memeriksa perangkat"})
 				return
 			}
 			if otherUserCount > 0 {
-				c.JSON(http.StatusForbidden, gin.H{"error": true, "message": "Perangkat sudah digunakan oleh user lain"})
+				c.JSON(http.StatusForbidden, LoginResponse{Error: true, Message: "Perangkat sudah digunakan oleh user lain"})
 				return
 			}
 
-			// Cek waktu terakhir ganti device
 			if user.DeviceIDUpdatedAt != nil && time.Since(*user.DeviceIDUpdatedAt).Hours() < 24 {
-				c.JSON(http.StatusForbidden, gin.H{"error": true, "message": "Perangkat baru hanya bisa digunakan setelah 24 jam. Lakukan reset device."})
+				c.JSON(http.StatusForbidden, LoginResponse{Error: true, Message: "Perangkat baru hanya bisa digunakan setelah 24 jam. Lakukan reset device."})
 				return
 			}
 
-			// Update device_id dan last_device_change
-			if err := config.DB.Model(user).Updates(map[string]interface{}{
+			if err := config.DB.Model(&user).Updates(map[string]interface{}{
 				"device_id":            req.DeviceID,
 				"device_id_updated_at": time.Now(),
 			}).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": true, "message": "Gagal memperbarui perangkat"})
+				log.Printf("Login Error: Failed to update device_id for user '%s': %v", req.Username, err)
+				c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal memperbarui perangkat"})
 				return
 			}
 		}
 
-		// Generate JWT Token
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"sub": user.Username,
 			"exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
@@ -100,23 +92,21 @@ func Login() gin.HandlerFunc {
 
 		tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": true, "message": "Gagal membuat token"})
+			log.Printf("Login Error: Failed to generate token for user '%s': %v", req.Username, err)
+			c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal membuat token"})
 			return
 		}
+
 		loginResult := &LoginResult{
 			Name:        user.Nama,
 			Username:    user.Username,
 			TokenString: tokenString,
 		}
 
-		loginResponse := &LoginResponse{
+		c.JSON(http.StatusOK, LoginResponse{
 			LoginResult: loginResult,
 			Error:       false,
 			Message:     "Login berhasil",
-		}
-		// Kirim response ke client
-		c.JSON(http.StatusOK,
-			loginResponse,
-		)
+		})
 	}
 }

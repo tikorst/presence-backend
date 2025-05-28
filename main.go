@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -24,7 +23,6 @@ func init() {
 	godotenv.Load()
 }
 func main() {
-	runtime.GOMAXPROCS(2)
 	// gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	// Public routes
