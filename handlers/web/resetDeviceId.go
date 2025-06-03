@@ -12,7 +12,7 @@ type ResetDeviceRequest struct {
 	Username string `json:"username" binding:"required"`
 }
 
-func ResetDeviceID(c *gin.Context) {
+func ResetDeviceID (c *gin.Context)  {
 	var req ResetDeviceRequest
 	if err := c.Bind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})

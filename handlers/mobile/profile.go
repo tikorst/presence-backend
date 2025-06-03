@@ -25,7 +25,7 @@ type ProfileResponse struct {
 	URL          string `json:"url"`
 }
 
-func Profile(c *gin.Context) {
+func GetProfile(c *gin.Context) {
 	claims, _ := c.Get("claims")
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)

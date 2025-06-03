@@ -6,7 +6,7 @@ import (
 	"github.com/tikorst/presence-backend/config"
 )
 
-func AllGrade(c *gin.Context) {
+func GetAllGrade(c *gin.Context) {
 	claims, _ := c.Get("claims")
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)

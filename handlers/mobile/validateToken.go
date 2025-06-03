@@ -6,8 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func ValidateToken() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "Token is valid"})
-	}
+func ValidateToken(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "Token is valid"})
 }
+

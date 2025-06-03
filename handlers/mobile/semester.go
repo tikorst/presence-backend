@@ -6,7 +6,7 @@ import (
 	"github.com/tikorst/presence-backend/models"
 )
 
-func Semester(c *gin.Context) {
+func GetSemester(c *gin.Context) {
 
 	var semesters []models.Semester
 	if err := config.DB.Find(&semesters).Error; err != nil {

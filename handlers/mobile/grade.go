@@ -24,7 +24,7 @@ type GradeResponse struct {
 	Bobot      float64 `json:"bobot"`
 }
 
-func Grade(c *gin.Context) {
+func GetGrade(c *gin.Context) {
 	claims, _ := c.Get("claims")
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)

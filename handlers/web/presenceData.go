@@ -8,7 +8,7 @@ import (
 	"github.com/tikorst/presence-backend/models"
 )
 
-func PresenceData(c *gin.Context) {
+func GetPresenceData(c *gin.Context)   {
 	meetingID := c.Param("meetingID")
 	classID := c.Param("classID")
 	var mahasiswaKelas []models.MahasiswaKelas

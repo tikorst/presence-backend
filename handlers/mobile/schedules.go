@@ -24,7 +24,7 @@ type JadwalResponse struct {
 	Pertemuan      []models.Pertemuan `json:"pertemuan"`
 }
 
-func Schedules(c *gin.Context) {
+func GetSchedules(c *gin.Context) {
 	claims, _ := c.Get("claims")
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)

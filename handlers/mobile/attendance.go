@@ -30,7 +30,7 @@ type PresensiRes struct {
 	Status      string `json:"status"`
 }
 
-func Attendance(c *gin.Context) {
+func GetAttendance(c *gin.Context) {
 	claims, _ := c.Get("claims")
 	jwtClaims := claims.(jwt.MapClaims)
 	username := jwtClaims["sub"].(string)

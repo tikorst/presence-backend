@@ -20,10 +20,9 @@ func init() {
 	config.ConnectDB()
 	config.ConnectRedis()
 	config.ConnectStorage()
-	godotenv.Load()
 }
 func main() {
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	// Public routes
 	if config.RedisDB == nil {
@@ -39,22 +38,22 @@ func main() {
 	}))
 
 	// API
-	r.POST("/login", mobile.Login())
+	r.POST("/login", mobile.Login)
 
 	// Web
-	r.POST("/web/login", web.Login())
+	r.POST("/web/login", web.Login)
 	protectedWeb := r.Group("/web")
 	{
 		protectedWeb.Use(middleware.Web())
-		protectedWeb.GET("/classes", web.Classes())
-		protectedWeb.GET("/classes/:classID/meetings", web.Meetings())
+		protectedWeb.GET("/classes", web.GetClasses)
+		protectedWeb.GET("/classes/:classID/meetings", web.GetMeetings)
 		protectedWeb.GET("/generate_qr/:classID/:meetingID", web.GenerateQR)
-		protectedWeb.GET("/attendance/:classID/:meetingID", web.PresenceData)
-		protectedWeb.GET("verify-role", web.VerifyRole())
+		protectedWeb.GET("/attendance/:classID/:meetingID", web.GetPresenceData)
+		protectedWeb.GET("verify-role", web.VerifyRole)
 
 		adminRoutes := protectedWeb.Group("/admin").Use(middleware.AdminOnly())
 		{
-			adminRoutes.GET("/users", web.GetUsers())
+			adminRoutes.GET("/users", web.GetUsers)
 			adminRoutes.POST("/reset", web.ResetDeviceID)
 		}
 	}
@@ -63,13 +62,13 @@ func main() {
 	protected := r.Group("/api").Use(middleware.Auth())
 	{
 		protected.POST("/presence", mobile.ValidateQr)
-		protected.GET("/validate", mobile.ValidateToken())
-		protected.GET("/class", mobile.Schedules)
-		protected.GET("/attendance", mobile.Attendance)
-		protected.GET("/semester", mobile.Semester)
-		protected.GET("/grade", mobile.Grade)
-		protected.GET("/allgrade", mobile.AllGrade)
-		protected.GET("/profile", mobile.Profile)
+		protected.GET("/validate", mobile.ValidateToken)
+		protected.GET("/class", mobile.GetSchedules)
+		protected.GET("/attendance", mobile.GetAttendance)
+		protected.GET("/semester", mobile.GetSemester)
+		protected.GET("/grade", mobile.GetGrade)
+		protected.GET("/allgrade", mobile.GetAllGrade)
+		protected.GET("/profile", mobile.GetProfile)
 	}
 	port := os.Getenv("PORT")
 	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
