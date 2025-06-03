@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -24,10 +23,6 @@ func init() {
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
-	// Public routes
-	if config.RedisDB == nil {
-		fmt.Println("RedisDB is nil! Initialization failed.")
-	}
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://presence-web.tikorst.cloud"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -71,5 +66,8 @@ func main() {
 		protected.GET("/profile", mobile.GetProfile)
 	}
 	port := os.Getenv("PORT")
-	r.Run("0.0.0.0:" + port) // Jalankan di port 8080
+	certPath := os.Getenv("CERT_PATH")
+	keyPath := os.Getenv("KEY_PATH")
+
+	r.RunTLS("0.0.0.0:"+port, certPath, keyPath)
 }

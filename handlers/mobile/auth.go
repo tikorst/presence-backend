@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -58,17 +59,6 @@ func Login(c *gin.Context) {
 	}
 
 	if user.DeviceID != req.DeviceID {
-		var otherUserCount int64
-		if err := config.DB.Model(&models.User{}).Where("device_id = ? AND username != ?", req.DeviceID, req.Username).Count(&otherUserCount).Error; err != nil {
-			log.Printf("Login Error: Failed to check device_id for user '%s': %v", req.Username, err)
-			c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal memeriksa perangkat"})
-			return
-		}
-		if otherUserCount > 0 {
-			c.JSON(http.StatusForbidden, LoginResponse{Error: true, Message: "Perangkat sudah digunakan oleh user lain"})
-			return
-		}
-
 		if user.DeviceIDUpdatedAt != nil && time.Since(*user.DeviceIDUpdatedAt).Hours() < 24 {
 			c.JSON(http.StatusForbidden, LoginResponse{Error: true, Message: "Perangkat baru hanya bisa digunakan setelah 24 jam. Lakukan reset device."})
 			return
@@ -78,9 +68,14 @@ func Login(c *gin.Context) {
 			"device_id":            req.DeviceID,
 			"device_id_updated_at": time.Now(),
 		}).Error; err != nil {
-			log.Printf("Login Error: Failed to update device_id for user '%s': %v", req.Username, err)
-			c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal memperbarui perangkat"})
-			return
+			if strings.Contains(err.Error(), "duplicated key") || strings.Contains(err.Error(), "UNIQUE constraint failed") {
+				c.JSON(http.StatusForbidden, LoginResponse{Error: true, Message: "Perangkat sudah digunakan oleh user lain"})
+				return
+			} else {
+				log.Printf("Login Error: Failed to update device_id for user '%s': %v", req.Username, err)
+				c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal memperbarui perangkat"})
+				return
+			}
 		}
 	}
 
@@ -108,4 +103,3 @@ func Login(c *gin.Context) {
 		Message:     "Login berhasil",
 	})
 }
-
