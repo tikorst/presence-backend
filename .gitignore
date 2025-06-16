@@ -1,5 +1,5 @@
 /go.sum
-/ssl/*
+/ssl
 .env
 *.exe
 *.exe~

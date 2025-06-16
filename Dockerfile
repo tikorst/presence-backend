@@ -17,7 +17,6 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     CGO_ENABLED=0 GOARCH=$TARGETARCH go build -o /bin/server .
 
 FROM alpine:latest AS final
-ADD ssl/DigiCertGlobalRootCA.crt.pem ssl/DigiCertGlobalRootCA.crt.pem
 RUN apk add --no-cache tzdata
 
 RUN --mount=type=cache,target=/var/cache/apk \

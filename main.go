@@ -15,7 +15,6 @@ import (
 
 func init() {
 	godotenv.Load()
-	config.InitTLS()
 	config.ConnectDB()
 	config.ConnectRedis()
 	config.ConnectStorage()

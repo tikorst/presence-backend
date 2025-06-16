@@ -52,10 +52,6 @@ var DB *gorm.DB
 
 // ConnectDB initializes the database connection
 func ConnectDB() {
-	// Ensure TLS is initialized before connecting
-	InitTLS()
-
-	// Define DSN with custom TLS
 	dsn := os.Getenv("DB_DSN")
 	if dsn == "" {
 		panic("DB_DSN environment variable is not set")
@@ -71,8 +67,8 @@ func ConnectDB() {
 	if err != nil {
 		panic(err)
 	}
-	sqlDB.SetMaxIdleConns(10)           // jumlah koneksi idle maksimum
-	sqlDB.SetMaxOpenConns(341)          // jumlah koneksi maksimum yang terbuka
-	sqlDB.SetConnMaxLifetime(time.Hour) // batas waktu koneksi aktif
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(130)
+	sqlDB.SetConnMaxLifetime(time.Hour)
 	fmt.Println("Database connected successfully!")
 }
