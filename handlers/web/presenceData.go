@@ -8,7 +8,7 @@ import (
 	"github.com/tikorst/presence-backend/models"
 )
 
-func GetPresenceData(c *gin.Context)   {
+func GetPresenceData(c *gin.Context) {
 	meetingID := c.Param("meetingID")
 	classID := c.Param("classID")
 	var mahasiswaKelas []models.MahasiswaKelas
@@ -22,20 +22,25 @@ func GetPresenceData(c *gin.Context)   {
 		return
 	}
 	attendanceMap := make(map[string]string)
+	catatanMap := make(map[string]string)
 	for _, mhs := range mahasiswaKelas {
 		attendanceMap[mhs.Mahasiswa.User.Nama] = "Alpha"
+		catatanMap[mhs.NPM] = ""
 	}
 
 	for _, pres := range presensi {
 		attendanceMap[pres.NPM] = "Hadir"
+		catatanMap[pres.NPM] = pres.Catatan
 	}
 
 	// Create a response data structure
 	responseData := make([]map[string]string, 0)
 	for _, mhs := range mahasiswaKelas {
 		responseData = append(responseData, map[string]string{
+			"npm":    mhs.NPM,
 			"nama":   mhs.Mahasiswa.User.Nama,
 			"status": attendanceMap[mhs.NPM],
+			"catatan": catatanMap[mhs.NPM], 
 		})
 	}
 

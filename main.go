@@ -45,6 +45,7 @@ func main() {
 		protectedWeb.GET("/generate_qr/:classID/:meetingID", web.GenerateQR)
 		protectedWeb.GET("/attendance/:classID/:meetingID", web.GetPresenceData)
 		protectedWeb.GET("verify-role", web.VerifyRole)
+		protectedWeb.POST("/attendance/:classID/:meetingID", web.ManualAttendance)
 
 		adminRoutes := protectedWeb.Group("/admin").Use(middleware.AdminOnly())
 		{
