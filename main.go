@@ -21,7 +21,6 @@ func init() {
 	config.ConnectStorage()
 }
 func main() {
-	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://presence-web.tikorst.cloud"},
