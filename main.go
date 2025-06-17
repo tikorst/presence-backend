@@ -34,8 +34,8 @@ func main() {
 
 	// API
 	r.POST("/login", mobile.Login)
+
 	// Web
-	r.GET("/csrf-token", middleware.GetCSRFFromJWT)
 	r.POST("/web/login", web.Login)
 	protectedWeb := r.Group("/web")
 	{
@@ -55,7 +55,7 @@ func main() {
 		}
 	}
 
-	// Protected routes
+	// Protected Api routes
 	protected := r.Group("/api")
 	protected.Use(middleware.AppCheckMiddleware(config.FirebaseApp), middleware.Auth())
 	{

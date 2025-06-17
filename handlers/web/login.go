@@ -55,8 +55,7 @@ func Login(c *gin.Context) {
 		return
 	}
 	// Set cookie dengan token JWT
-	// c.Header("Set-Cookie", "token="+tokenString+"; Path=/; Domain=.tikorst.cloud; Max-Age=3600; HttpOnly; SameSite=Strict")
-	c.SetCookie("token", tokenString, 3600, "/", "", false, true)
+	c.Header("Set-Cookie", "token="+tokenString+"; Path=/; Domain=.tikorst.cloud; Max-Age=3600; HttpOnly; SameSite=Lax; Secure")
 
 	// Kirim response ke client
 	c.JSON(http.StatusOK, gin.H{
