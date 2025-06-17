@@ -24,7 +24,7 @@ func main() {
 	gin.SetMode(os.Getenv("GIN_MODE"))
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://presence-web.tikorst.cloud", "http://localhost:5173"},
+		AllowOrigins:     []string{"https://presence-web.tikorst.cloud"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
