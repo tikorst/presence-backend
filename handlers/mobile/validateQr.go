@@ -9,16 +9,15 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
 	"github.com/tikorst/presence-backend/models"
+	 "github.com/tikorst/presence-backend/helpers"
 )
 
 type QRRequest struct {
 	QRCode    string  `json:"qr_code" binding:"required"`
 	Latitude  float64 `json:"latitude" binding:"required"`
 	Longitude float64 `json:"longitude" binding:"required"`
-	DeviceID  string  `json:"device_id" binding:"required"`
 	Timestamp string  `json:"timestamp" binding:"required"`
 }
 
@@ -43,9 +42,8 @@ func ValidateQr(c *gin.Context) {
 	}
 	// Ambil claims dari context
 	// Pastikan JWT token valid
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	username := jwtClaims["sub"].(string)
+	username, _ := helpers.GetUsername(c)
+	device_id, _ := helpers.GetDeviceID(c)
 
 	// Check apakah mahasiswa sudah melakukan presensi
 	var existingPresensi models.Presensi
@@ -93,7 +91,7 @@ func ValidateQr(c *gin.Context) {
 	}
 
 	// Check apakah lokasi presensi sesuai dengan lokasi pertemuan
-	
+
 	distance := haversine(req.Latitude, req.Longitude, jadwal.Ruangan.Latitude.Float64, jadwal.Ruangan.Longitude.Float64)
 	if distance > float64(30) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Lokasi kamu terlalu jauh dari kelas"})
@@ -104,13 +102,14 @@ func ValidateQr(c *gin.Context) {
 		NPM:           username,
 		IDPertemuan:   pertemuanID,
 		WaktuPresensi: time.Now(),
-		Status:        "hadir",
+		DeviceID:      device_id,
+		Status:        "Hadir",
 	}
 	if err := config.DB.Create(&attendance).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan data presensi"})
 		return
 	}
-	var message = " Berhasil presensi di kelas " + jadwal.Kelas.MataKuliah.NamaMatkul + " - " + jadwal.Kelas.NamaKelas
+	var message = "Berhasil presensi di kelas " + jadwal.Kelas.MataKuliah.NamaMatkul + " - " + jadwal.Kelas.NamaKelas
 	c.JSON(http.StatusOK, gin.H{"message": message})
 }
 

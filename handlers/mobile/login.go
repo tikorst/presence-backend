@@ -59,8 +59,8 @@ func Login(c *gin.Context) {
 	}
 
 	if user.DeviceID != req.DeviceID {
-		if user.DeviceIDUpdatedAt != nil && time.Since(*user.DeviceIDUpdatedAt).Hours() < 24 {
-			c.JSON(http.StatusForbidden, LoginResponse{Error: true, Message: "Perangkat baru hanya bisa digunakan setelah 24 jam. Lakukan reset device."})
+		if user.DeviceIDUpdatedAt != nil && time.Since(*user.DeviceIDUpdatedAt).Hours() < 168 {
+			c.JSON(http.StatusForbidden, LoginResponse{Error: true, Message: "Perangkat baru hanya bisa digunakan setelah 7 Hari. Lakukan reset device."})
 			return
 		}
 
@@ -80,8 +80,9 @@ func Login(c *gin.Context) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.Username,
-		"exp": time.Now().Add(7 * 24 * time.Hour).Unix(),
+		"sub":       user.Username,
+		"device_id": req.DeviceID,
+		"exp":       time.Now().Add(7 * 24 * time.Hour).Unix(),
 	})
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
@@ -90,6 +91,8 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, LoginResponse{Error: true, Message: "Gagal membuat token"})
 		return
 	}
+
+	go createUserLog(&user, req.DeviceID, c, true)
 
 	loginResult := &LoginResult{
 		Name:        user.Nama,
@@ -102,4 +105,26 @@ func Login(c *gin.Context) {
 		Error:       false,
 		Message:     "Login berhasil",
 	})
+}
+func createUserLog(user *models.User, deviceID string, c *gin.Context, success bool) {
+	ip := c.ClientIP()
+	ua := c.Request.UserAgent()
+
+	var userID uint
+	if user != nil {
+		userID = uint(user.IDUser)
+	}
+
+	logEntry := models.UserLog{
+		IDUser:    userID,
+		DeviceID:  deviceID,
+		IPAddress: ip,
+		UserAgent: ua,
+		LoginTime: time.Now(),
+		Success:   success,
+	}
+
+	if err := config.DB.Create(&logEntry).Error; err != nil {
+		log.Printf("UserLog Error: gagal mencatat log login: %v", err)
+	}
 }

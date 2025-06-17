@@ -2,14 +2,12 @@ package mobile
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/helpers"
 )
 
 func GetAllGrade(c *gin.Context) {
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	username := jwtClaims["sub"].(string)
+	username, _ := helpers.GetUsername(c)
 
 	var gradeList []GradeResponse
 	err := config.DB.Table("kelas").

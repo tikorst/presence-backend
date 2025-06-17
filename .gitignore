@@ -7,3 +7,4 @@ presence-backend.exe
 presence-backend.exe~
 *.json
 /certs
+.json

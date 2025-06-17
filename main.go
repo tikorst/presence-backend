@@ -18,13 +18,15 @@ func init() {
 	config.ConnectDB()
 	config.ConnectRedis()
 	config.ConnectStorage()
+	config.ConnectFirebase()
 }
 func main() {
+	gin.SetMode(os.Getenv("GIN_MODE"))
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://presence-web.tikorst.cloud"},
+		AllowOrigins:     []string{"https://presence-web.tikorst.cloud", "http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-CSRF-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
@@ -32,17 +34,18 @@ func main() {
 
 	// API
 	r.POST("/login", mobile.Login)
-
 	// Web
+	r.GET("/csrf-token", middleware.GetCSRFFromJWT)
 	r.POST("/web/login", web.Login)
 	protectedWeb := r.Group("/web")
 	{
 		protectedWeb.Use(middleware.Web())
+		protectedWeb.Use(middleware.JWTCSRFMiddleware())
 		protectedWeb.GET("/classes", web.GetClasses)
 		protectedWeb.GET("/classes/:classID/meetings", web.GetMeetings)
 		protectedWeb.GET("/generate_qr/:classID/:meetingID", web.GenerateQR)
 		protectedWeb.GET("/attendance/:classID/:meetingID", web.GetPresenceData)
-		protectedWeb.GET("verify-role", web.VerifyRole)
+		protectedWeb.GET("verify", web.VerifyRole)
 		protectedWeb.POST("/attendance/:classID/:meetingID", web.ManualAttendance)
 
 		adminRoutes := protectedWeb.Group("/admin").Use(middleware.AdminOnly())
@@ -53,7 +56,8 @@ func main() {
 	}
 
 	// Protected routes
-	protected := r.Group("/api").Use(middleware.Auth())
+	protected := r.Group("/api")
+	protected.Use(middleware.AppCheckMiddleware(config.FirebaseApp), middleware.Auth())
 	{
 		protected.POST("/presence", mobile.ValidateQr)
 		protected.GET("/validate", mobile.ValidateToken)

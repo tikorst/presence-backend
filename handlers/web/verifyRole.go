@@ -4,14 +4,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/tikorst/presence-backend/helpers"
 )
 
 func VerifyRole(c *gin.Context) {
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	role := jwtClaims["role"].(string)
+	role, _ := helpers.GetRole(c)
 
 	c.JSON(http.StatusOK, gin.H{"role": role})
 }
-

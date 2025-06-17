@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/helpers"
 	"github.com/tikorst/presence-backend/models"
 )
 
@@ -19,9 +19,9 @@ type ManualAttendanceRequest struct {
 func ManualAttendance(c *gin.Context) {
 	classIDStr := c.Param("classID")
 	meetingIDStr := c.Param("meetingID")
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	username := jwtClaims["sub"].(string)
+
+	username, _ := helpers.GetUsername(c)
+
 	classID, err := strconv.Atoi(classIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID kelas tidak valid"})

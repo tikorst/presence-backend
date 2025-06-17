@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/helpers"
 	"github.com/tikorst/presence-backend/models"
 )
 
@@ -31,9 +31,7 @@ type PresensiRes struct {
 }
 
 func GetAttendance(c *gin.Context) {
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	username := jwtClaims["sub"].(string)
+	username, _ := helpers.GetUsername(c)
 	idSemesterStr := c.Query("id_semester")
 	// If semester_id is empty, use the latest semester
 	idSemester, err := strconv.Atoi(idSemesterStr)

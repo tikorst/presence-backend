@@ -4,16 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/helpers"
 	"github.com/tikorst/presence-backend/models"
 )
 
 func GetClasses(c *gin.Context) {
 	var classes []models.Kelas
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	username := jwtClaims["sub"].(string)
+	username, _ := helpers.GetUsername(c)
 
 	user := models.User{}
 	var latestSemester models.Semester

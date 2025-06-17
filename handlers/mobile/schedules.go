@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/helpers"
 	"github.com/tikorst/presence-backend/models"
 	"gorm.io/gorm"
 )
@@ -25,9 +25,7 @@ type JadwalResponse struct {
 }
 
 func GetSchedules(c *gin.Context) {
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	username := jwtClaims["sub"].(string)
+	username, _ := helpers.GetUsername(c)
 
 	// Mengambil data kelas yang diambil mahasiswa
 	var mahasiswaKelas []models.MahasiswaKelas
@@ -55,10 +53,10 @@ func GetSchedules(c *gin.Context) {
 
 	var kelas []models.Kelas
 	SubQuery := config.DB.
-	Table("semester").
-	Select("id_semester").
-	Order("tahun_ajaran DESC").
-	Limit(1)
+		Table("semester").
+		Select("id_semester").
+		Order("tahun_ajaran DESC").
+		Limit(1)
 
 	if err := config.DB.
 		Preload("MataKuliah").

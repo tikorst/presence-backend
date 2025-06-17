@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/helpers"
 	"github.com/tikorst/presence-backend/models"
-
+	
 
 	"cloud.google.com/go/storage"
 )
@@ -26,9 +26,7 @@ type ProfileResponse struct {
 }
 
 func GetProfile(c *gin.Context) {
-	claims, _ := c.Get("claims")
-	jwtClaims := claims.(jwt.MapClaims)
-	username := jwtClaims["sub"].(string)
+	username, _ := helpers.GetUsername(c)
 
 	mhs := models.Mahasiswa{}
 	if err := config.DB.
@@ -39,7 +37,6 @@ func GetProfile(c *gin.Context) {
 		c.JSON(500, gin.H{"error": true, "message": "Gagal mengambil data mahasiswa"})
 		return
 	}
-
 
 	type serviceAccount struct {
 		ClientEmail string `json:"client_email"`

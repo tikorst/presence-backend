@@ -1,6 +1,8 @@
 package web
 
 import (
+	"encoding/base64"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -47,23 +49,48 @@ func Login(c *gin.Context) {
 	// Async Update Device ID jika berbeda
 
 	// Generate JWT Token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub":  user.Username,
-		"role": user.TipeUser,
-		"exp":  time.Now().Add(1 * time.Hour).Unix(),
-	})
-
-	// Sign token dengan secret key
-	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
+	tokenString, csrfToken, err := createJWTWithCSRF(user.Username, user.TipeUser)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to create token", "err": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})
 		return
 	}
 	// Set cookie dengan token JWT
-	c.Header("Set-Cookie", "token="+tokenString+"; Path=/; Domain=.tikorst.cloud; Max-Age=3600; Secure; SameSite=None")
+	// c.Header("Set-Cookie", "token="+tokenString+"; Path=/; Domain=.tikorst.cloud; Max-Age=3600; HttpOnly; SameSite=Strict")
+	c.SetCookie("token", tokenString, 3600, "/", "", false, true)
+
 	// Kirim response ke client
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Login berhasil",
-		"user":    user,
+		"message":    "Login berhasil",
+		"csrf_token": csrfToken,
+		"user":       user,
 	})
+}
+func generateCSRFToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+// Create JWT dengan CSRF token embedded
+func createJWTWithCSRF(username, role string) (string, string, error) {
+	csrfToken, err := generateCSRFToken()
+	if err != nil {
+		return "", "", err
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":        username,
+		"role":       role,
+		"csrf_token": csrfToken, // Embed CSRF token
+		"exp":        time.Now().Add(1 * time.Hour).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
+	if err != nil {
+		return "", "", err
+	}
+
+	return tokenString, csrfToken, nil
 }

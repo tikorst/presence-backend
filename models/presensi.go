@@ -8,6 +8,7 @@ type Presensi struct {
 	IDPertemuan   int       `json:"id_pertemuan"`
 	WaktuPresensi time.Time `json:"waktu_presensi"`
 	Status        string    `json:"status"`
+	DeviceID      string    `json:"device_id"`
 	Catatan       string    `json:"catatan" gorm:"type:text"`
 	Mahasiswa     Mahasiswa `gorm:"foreignKey:NPM"`
 	Pertemuan     Pertemuan `gorm:"foreignKey:IDPertemuan"`
