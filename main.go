@@ -53,6 +53,7 @@ func main() {
 			adminRoutes.GET("/users", web.GetUsers)
 			adminRoutes.POST("/reset", web.ResetDeviceID)
 		}
+		protectedWeb.POST("/logout", web.Logout)
 	}
 
 	// Protected Api routes
