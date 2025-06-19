@@ -11,17 +11,17 @@ import (
 )
 
 type GradeResponse struct {
-	NPM        string  `json:"npm"`
-	IDKelas    int     `json:"id_kelas"`
-	IDSemester int     `json:"id_semester"`
-	NamaKelas  string  `json:"nama_kelas"`
-	NamaMatkul string  `json:"nama_matkul"`
-	TotalSKS   int     `json:"total_sks"`
-	IDNilai    int     `json:"id_nilai"`
-	NilaiUTS   float64 `json:"nilai_uts"`
-	NilaiUAS   float64 `json:"nilai_uas"`
-	NilaiHuruf string  `json:"nilai_huruf"`
-	Bobot      float64 `json:"bobot"`
+	NPM        string   `json:"npm"`
+	IDKelas    int      `json:"id_kelas"`
+	IDSemester int      `json:"id_semester"`
+	KodeMatkul string   `json:"kode_matkul"`
+	NamaMatkul string   `json:"nama_matkul"`
+	TotalSKS   int      `json:"total_sks"`
+	IDNilai    int      `json:"id_nilai"`
+	NilaiUTS   *float64 `json:"nilai_uts"`
+	NilaiUAS   *float64 `json:"nilai_uas"`
+	NilaiHuruf *string   `json:"nilai_huruf"`
+	Bobot      *float64 `json:"bobot"`
 }
 
 func GetGrade(c *gin.Context) {
@@ -52,7 +52,7 @@ func GetGrade(c *gin.Context) {
 		Joins("JOIN nilai ON mahasiswa_kelas.id_kelas = nilai.id_kelas AND mahasiswa_kelas.npm = nilai.npm").
 		Joins("JOIN mata_kuliah ON kelas.id_matkul = mata_kuliah.id_matkul").
 		Where("kelas.id_semester = ? AND mahasiswa_kelas.npm = ?", idSemester, username).
-		Select("mahasiswa_kelas.npm, kelas.id_kelas, kelas.id_semester, kelas.nama_kelas, mata_kuliah.nama_matkul AS nama_matkul, mata_kuliah.total_sks AS total_sks, nilai.*").
+		Select("mahasiswa_kelas.npm, kelas.id_kelas, kelas.id_semester, mata_kuliah.kode_matkul AS kode_matkul, mata_kuliah.nama_matkul AS nama_matkul, mata_kuliah.total_sks AS total_sks, nilai.*").
 		Scan(&gradeList).Error
 
 	if err != nil {

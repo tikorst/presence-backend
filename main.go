@@ -33,7 +33,7 @@ func main() {
 	}))
 
 	// API
-	r.POST("/login", mobile.Login)
+	r.POST("/login", middleware.AppCheckMiddleware(config.FirebaseApp), mobile.Login,)
 
 	// Web
 	r.POST("/web/login", web.Login)
