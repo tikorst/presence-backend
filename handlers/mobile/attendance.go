@@ -75,7 +75,7 @@ func GetAttendance(c *gin.Context) {
 		Joins("JOIN jadwal ON pertemuan.id_jadwal = jadwal.id_jadwal").
 		Joins("JOIN kelas ON jadwal.id_kelas = kelas.id_kelas").
 		Joins("LEFT JOIN presensi ON presensi.id_pertemuan = pertemuan.id_pertemuan AND presensi.npm = ?", username).
-		Where("kelas.id_semester = ? AND (pertemuan.tanggal < ? OR pertemuan.status = ?)", idSemester, today, "selesai").
+		Where("kelas.id_semester = ? AND (pertemuan.tanggal < ? OR pertemuan.status = ? OR presensi.id_presensi IS NOT NULL)", idSemester, today, "selesai").
 		Order("pertemuan.tanggal").
 		Scan(&presensiList)
 

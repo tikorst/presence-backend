@@ -10,7 +10,7 @@ func GetAllGrade(c *gin.Context) {
 	username, _ := helpers.GetUsername(c)
 
 	var gradeList []GradeResponse
-	err := config.DB.Debug().Table("kelas").
+	err := config.DB.Table("kelas").
 		Joins("JOIN mahasiswa_kelas ON kelas.id_kelas = mahasiswa_kelas.id_kelas").
 		Joins("JOIN nilai ON mahasiswa_kelas.id_kelas = nilai.id_kelas AND mahasiswa_kelas.npm = nilai.npm").
 		Joins("JOIN mata_kuliah ON kelas.id_matkul = mata_kuliah.id_matkul").
