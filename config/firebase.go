@@ -2,27 +2,31 @@ package config
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	firebase "firebase.google.com/go/v4"
+
 	"google.golang.org/api/option"
 )
 
+// Global variable to hold the Firebase app instance
 var FirebaseApp *firebase.App
 
-type ServiceAccountInfo struct {
-	ProjectID string `json:"project_id"`
-}
-
+// ConnectFirebase initializes the Firebase app with the provided credentials
 func ConnectFirebase() {
-	opt := option.WithCredentialsFile("firebase-services.json")
-	config := &firebase.Config{ProjectID: "presence-8f010"}
-	FirebaseApp, _ = firebase.NewApp(context.Background(), config, opt)
 
-	if FirebaseApp == nil {
-		log.Println("FirebaseApp is nil")
-	} else {
-		log.Println("FirebaseApp initialized successfully", FirebaseApp)
+	// Load Firebase credentials from a JSON file
+	opt := option.WithCredentialsFile("firebase-services.json")
+
+	// Initialize the Firebase app
+	app, err := firebase.NewApp(context.Background(), nil, opt)
+
+	// Check for errors during initialization
+	if err != nil {
+		fmt.Errorf("error initializing app: %v", err)
 	}
+
+	// Assign the initialized app to the global variable
+	FirebaseApp = app
 
 }

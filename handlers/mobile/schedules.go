@@ -1,7 +1,6 @@
 package mobile
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// JadwalResponse struct to format the response for schedules
 type JadwalResponse struct {
 	NPM            string             `json:"npm"`
 	IDKelas        int                `json:"id_kelas"`
@@ -24,22 +24,26 @@ type JadwalResponse struct {
 	Pertemuan      []models.Pertemuan `json:"pertemuan"`
 }
 
+// Function to get the schedules for a student
 func GetSchedules(c *gin.Context) {
+
+	// Get the username from the context
 	username, _ := helpers.GetUsername(c)
 
-	// Mengambil data kelas yang diambil mahasiswa
+	// Query to get the MahasiswaKelas data based on the username
 	var mahasiswaKelas []models.MahasiswaKelas
 	if err := config.DB.Where("npm = ? AND status = 'aktif'", username).Find(&mahasiswaKelas).Error; err != nil {
 		c.JSON(500, gin.H{"error": "Gagal mengambil data kelas"})
 		return
 	}
 
+	// Make a slice to hold the IDs of the classes taken by the student
 	var kelasIDs []int
 	for _, k := range mahasiswaKelas {
 		kelasIDs = append(kelasIDs, k.IDKelas)
 	}
 
-	// Mengambil data jadwal berdasarkan kelas yang diambil mahasiswa
+	// Query to get the Jadwal data for the classes taken by the student
 	var jadwal []models.Jadwal
 	if err := config.DB.
 		Preload("Kelas.MataKuliah").
@@ -51,6 +55,8 @@ func GetSchedules(c *gin.Context) {
 		return
 	}
 
+
+	// Query to get the Kelas data for the classes taken by the student
 	var kelas []models.Kelas
 	SubQuery := config.DB.
 		Table("semester").
@@ -58,6 +64,7 @@ func GetSchedules(c *gin.Context) {
 		Order("tahun_ajaran DESC").
 		Limit(1)
 
+	// Query to get the Kelas data for the classes taken by the student
 	if err := config.DB.
 		Preload("MataKuliah").
 		Preload("DosenPengampu.Dosen").
@@ -72,7 +79,11 @@ func GetSchedules(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Gagal mengambil data kelas"})
 		return
 	}
+
+	// Prepare the response data
 	var jadwalResponse []JadwalResponse
+
+	// Loop through the kelas and jadwal to format the response
 	for _, k := range kelas {
 		for _, j := range k.Jadwal {
 			jamMasuk := formatTime(j.Sesi.JamMasuk)
@@ -91,9 +102,12 @@ func GetSchedules(c *gin.Context) {
 			})
 		}
 	}
-	fmt.Println("NPM:", username)
+	
+	// If no schedules found, return an empty response
 	c.JSON(200, gin.H{"erorr": false, "data": jadwalResponse})
 }
+
+// Function to format time from "HH:MM:SS" to "HH:MM"
 func formatTime(input string) string {
 	parsedTime, err := time.Parse("15:04:05", input)
 	if err != nil {

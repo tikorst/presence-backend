@@ -9,8 +9,11 @@ import (
 )
 
 func GetMeetings(c *gin.Context) {
+
+	// Get the classID from the URL parameters
 	classID := c.Param("classID")
 
+	// Query to get the schedules for the class
 	var jadwal []models.Jadwal
 	if err := config.DB.
 		Preload("Ruangan").
@@ -21,6 +24,7 @@ func GetMeetings(c *gin.Context) {
 		return
 	}
 
+	// return the schedules
 	c.JSON(http.StatusOK, gin.H{"Status": "Berhasil",
 		"data": jadwal})
 

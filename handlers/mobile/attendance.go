@@ -31,7 +31,11 @@ type PresensiRes struct {
 }
 
 func GetAttendance(c *gin.Context) {
+
+	// Get the username from the context
 	username, _ := helpers.GetUsername(c)
+
+	// Get the semester_id from the query parameters
 	idSemesterStr := c.Query("id_semester")
 	// If semester_id is empty, use the latest semester
 	idSemester, err := strconv.Atoi(idSemesterStr)
@@ -41,6 +45,7 @@ func GetAttendance(c *gin.Context) {
 		idSemester = 0
 	}
 
+	// If idSemester is 0, fetch the latest semester
 	if idSemester == 0 {
 		var latestSemester models.Semester
 		if err := config.DB.
@@ -52,6 +57,7 @@ func GetAttendance(c *gin.Context) {
 		idSemester = latestSemester.IDSemester
 	}
 
+	// Query to get the list of classes for the user in the specified semester
 	var kelasList []KelasResponse
 	config.DB.Table("kelas").
 		Joins("JOIN mata_kuliah ON kelas.id_matkul = mata_kuliah.id_matkul").
@@ -60,9 +66,12 @@ func GetAttendance(c *gin.Context) {
 		Select("kelas.id_kelas, kelas.nama_kelas, mata_kuliah.nama_matkul as mata_kuliah, kelas.id_matkul, kelas.id_semester").
 		Scan(&kelasList)
 
-	var presensiList []PresensiRes
+	// Set today's date in the format "YYYY-MM-DD"
 	today := time.Now().Format("2006-01-02")
+	
 
+	// Query to get the attendance records for the classes
+	var presensiList []PresensiRes
 	config.DB.Table("pertemuan").
 		Select(`
             COALESCE(presensi.id_presensi, 0) as id_presensi,
@@ -85,6 +94,8 @@ func GetAttendance(c *gin.Context) {
 			presensiList[i].Status = strings.ToUpper(presensiList[i].Status[:1]) + strings.ToLower(presensiList[i].Status[1:])
 		}
 	}
+
+	// Buat map untuk mengelompokkan presensi berdasarkan ID kelas
 	presensiMap := make(map[int][]PresensiRes)
 	for _, p := range presensiList {
 		presensiMap[p.IDKelas] = append(presensiMap[p.IDKelas], p)
@@ -95,5 +106,7 @@ func GetAttendance(c *gin.Context) {
 		kelasList[i].Presensi = presensiMap[kelasList[i].IDKelas]
 	}
 
+
+	// Return the list of classes with attendance records
 	c.JSON(200, gin.H{"erorr": false, "data": kelasList, "npm": username})
 }

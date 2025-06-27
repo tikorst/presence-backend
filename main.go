@@ -13,6 +13,7 @@ import (
 	"github.com/tikorst/presence-backend/middleware"
 )
 
+// init function to load environment variables and initialize configurations
 func init() {
 	godotenv.Load()
 	config.ConnectDB()
@@ -20,8 +21,14 @@ func init() {
 	config.ConnectStorage()
 	config.ConnectFirebase()
 }
+
+// main function to set up the Gin router and define routes
 func main() {
+
+	// Set Gin mode based on environment variable
 	gin.SetMode(os.Getenv("GIN_MODE"))
+
+	// Create a new Gin router with CORS middleware
 	r := gin.Default()
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://presence-web.tikorst.cloud"},
@@ -69,9 +76,12 @@ func main() {
 		protected.GET("/allgrade", mobile.GetAllGrade)
 		protected.GET("/profile", mobile.GetProfile)
 	}
+
+	// Get the port and TLS certificate paths from environment variables
 	port := os.Getenv("PORT")
 	certPath := os.Getenv("CERT_PATH")
 	keyPath := os.Getenv("KEY_PATH")
 
+	// Run the server with TLS
 	r.RunTLS("0.0.0.0:"+port, certPath, keyPath)
 }
