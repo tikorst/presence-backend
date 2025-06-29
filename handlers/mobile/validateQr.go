@@ -6,12 +6,14 @@ import (
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tikorst/presence-backend/config"
+	"github.com/tikorst/presence-backend/helpers"
 	"github.com/tikorst/presence-backend/models"
-	 "github.com/tikorst/presence-backend/helpers"
 )
 
 // QRRequest struct to hold the request data for QR validation
@@ -31,14 +33,27 @@ func ValidateQr(c *gin.Context) {
 		return
 	}
 	// Check if qr code exists in Redis
-	pertemuanIDStr, err := config.RedisDB.Get(config.Ctx, req.QRCode).Result()
+	redisValueStr, err := config.RedisDB.Get(config.Ctx, req.QRCode).Result()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "QR code tidak valid"})
 		return
 	}
-	
+	parts := strings.Split(redisValueStr, ":")
+	if len(parts) != 2 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format QR code tidak valid"})
+		return
+	}
+
+	meetingID := parts[0]
+	classID := parts[1]
 	// Convert pertemuanID from string to int
-	pertemuanID, err := strconv.Atoi(pertemuanIDStr)
+	pertemuanID, err := strconv.Atoi(meetingID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengonversi pertemuanID"})
+		return
+	}
+	// Convert classID from string to int
+	kelasID, err := strconv.Atoi(classID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengonversi classID"})
 		return
@@ -47,52 +62,55 @@ func ValidateQr(c *gin.Context) {
 	username, _ := helpers.GetUsername(c)
 	device_id, _ := helpers.GetDeviceID(c)
 
-	// Check whether student has already checked in for this meeting
-	var existingPresensi models.Presensi
-	if err := config.DB.Where("npm = ? AND id_pertemuan = ?", username, pertemuanID).First(&existingPresensi).Error; err == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kamu sudah melakukan presensi"})
-		return
-	}
+	var (
+		kelas               models.MahasiswaKelas
+		jadwal              models.Jadwal
+		jadwalErr, kelasErr error
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	// Check whether student is registered in the class
+	go func() {
+		defer wg.Done()
+		kelasErr = config.DB.Where("npm = ? AND id_kelas = ? AND status = ?", username, kelasID, "aktif").First(&kelas).Error
+
+	}()
 
 	// set key for jadwal from pertemuanID
-	jadwalKey := fmt.Sprintf("jadwal:%d", pertemuanID)
-	var pertemuan models.Pertemuan
-	var jadwal models.Jadwal
-
-	// Check redis for jadwal data
-	jadwalData, err := config.RedisDB.Get(config.Ctx, jadwalKey).Result()
-	if err == nil {
-		// If not error, unmarshal jadwal data from Redis
-		if err := json.Unmarshal([]byte(jadwalData), &jadwal); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memproses data pertemuan dari Redis"})
-			return
-		}
-	} else {
-		// Get jadwal data from database if not found in Redis
-		if err := config.DB.Where("id_pertemuan = ?", pertemuanID).First(&pertemuan).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi pertemuan", "err": err.Error()})
+	go func() {
+		defer wg.Done()
+		jadwalKey := fmt.Sprintf("jadwal:%d", pertemuanID)
+		jadwalData, err := config.RedisDB.Get(config.Ctx, jadwalKey).Result()
+		if err == nil {
+			jadwalErr = json.Unmarshal([]byte(jadwalData), &jadwal)
 			return
 		}
 
-		// Get Related Jadwal data
-		if err := config.DB.Preload("Ruangan").Preload("Kelas.MataKuliah").
-			Where("id_jadwal = ?", pertemuan.IDJadwal).First(&jadwal).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi kelas", "err": err.Error()})
-			return
+		// Fallback ke DB
+		jadwalErr = config.DB.
+			Joins("JOIN pertemuan ON pertemuan.id_jadwal = jadwal.id_jadwal").
+			Preload("Ruangan").
+			Preload("Kelas.MataKuliah").
+			Where("pertemuan.id_pertemuan = ?", pertemuanID).
+			First(&jadwal).Error
+		if jadwalErr == nil {
+			if jadwalJSON, err := json.Marshal(jadwal); err == nil {
+				config.RedisDB.Set(config.Ctx, jadwalKey, jadwalJSON, 5*time.Minute)
+			}
 		}
+	}()
+	wg.Wait()
 
-		// save jadwal data to Redis with 5 minutes expiration
-		if jadwalJSON, err := json.Marshal(jadwal); err == nil {
-			config.RedisDB.Set(config.Ctx, jadwalKey, jadwalJSON, 5*time.Minute)
-		}
-	}
-
-	// Check whether student is registered in the class
-	var mahasiswaKelas models.MahasiswaKelas
-	if err := config.DB.Where("npm = ? AND id_kelas = ? AND status = ?", username, jadwal.IDKelas, "aktif").First(&mahasiswaKelas).Error; err != nil {
+	if kelasErr != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kamu tidak terdaftar di kelas ini"})
 		return
 	}
+	if jadwalErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mendapatkan informasi kelas"})
+		return
+	}
+	// Check whether student is registered in the class
 
 	// Check if user location is within 30 meters of the class location
 	distance := haversine(req.Latitude, req.Longitude, jadwal.Ruangan.Latitude.Float64, jadwal.Ruangan.Longitude.Float64)
@@ -112,6 +130,10 @@ func ValidateQr(c *gin.Context) {
 
 	// Save attendance record to the database
 	if err := config.DB.Create(&attendance).Error; err != nil {
+		if strings.Contains(err.Error(), "duplicated key") || strings.Contains(err.Error(), "UNIQUE") {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Kamu sudah melakukan presensi"})
+		return
+	}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan data presensi"})
 		return
 	}
@@ -126,10 +148,9 @@ func haversine(lat1, lon1, lat2, lon2 float64) float64 {
 	const R = 6371000 // radius of the Earth in meters
 
 	// Convert latitude and longitude from degrees to radians
-	dLat := (lat2 - lat1) * math.Pi / 180 
+	dLat := (lat2 - lat1) * math.Pi / 180
 	dLon := (lon2 - lon1) * math.Pi / 180
 
-	
 	// Haversine formula
 	a := math.Sin(dLat/2)*math.Sin(dLat/2) +
 		math.Cos(lat1*math.Pi/180)*math.Cos(lat2*math.Pi/180)*

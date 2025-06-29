@@ -7,8 +7,8 @@ type Pertemuan struct {
 	Tanggal     time.Time `json:"tanggal"`
 	Status      string    `json:"status"`
 	PertemuanKe string    `json:"pertemuan_ke"`
-	IDJadwal    *int      `json:"id_jadwal"`
-	Jadwal      Jadwal    `gorm:"foreignKey:IDJadwal;references:IDJadwal"`
+	IDJadwal    int       `json:"id_jadwal"`
+	Jadwal      Jadwal    `gorm:"foreignKey:IDJadwal;references:IDJadwal" json:"-"`
 }
 
 func (Pertemuan) TableName() string {

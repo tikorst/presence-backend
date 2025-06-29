@@ -1,44 +1,5 @@
 package config
 
-// import (
-// 	"crypto/tls"
-// 	"crypto/x509"
-// 	"database/sql"
-// 	"fmt"
-// 	"os"
-
-// 	"github.com/go-sql-driver/mysql"
-// 	_ "github.com/go-sql-driver/mysql"
-// 	"gorm.io/gorm"
-// )
-
-// var DB *gorm.DB
-
-// func ConnectDB() (*sql.DB, error) {
-// 	// Baca certificate SSL
-// 	certBytes, err := os.ReadFile("ssl/DigiCertGlobalRootCA.crt.pem")
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Register SSL certificate
-// 	rootCAs := x509.NewCertPool()
-// 	if ok := rootCAs.AppendCertsFromPEM(certBytes); !ok {
-// 		return nil, fmt.Errorf("failed to append CA certificate")
-// 	}
-
-// 	mysql.RegisterTLSConfig("custom", &tls.Config{
-// 		RootCAs: rootCAs,
-// 	})
-// 	dsn := os.Getenv("DB_DSN")
-// 	DB, err = gorm.Open("mysql", dsn)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return db, nil
-// }
-// database.go
-
 import (
 	"fmt"
 	"os"
@@ -79,7 +40,8 @@ func ConnectDB() {
 
 	// Set connection pool parameters
 	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(130)
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
+	sqlDB.SetMaxOpenConns(200)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	// Print success message

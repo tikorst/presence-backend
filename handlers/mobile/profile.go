@@ -9,12 +9,11 @@ import (
 	"github.com/tikorst/presence-backend/config"
 	"github.com/tikorst/presence-backend/helpers"
 	"github.com/tikorst/presence-backend/models"
-	
 
 	"cloud.google.com/go/storage"
 )
 
-// Custom response struct for profile data
+// Your existing structs remain the same
 type ProfileResponse struct {
 	NPM          string `json:"npm"`
 	Nama         string `json:"nama"`
@@ -26,58 +25,64 @@ type ProfileResponse struct {
 	URL          string `json:"url"`
 }
 
-// Service account struct for GCP credentials
 type serviceAccount struct {
 	ClientEmail string `json:"client_email"`
 	PrivateKey  string `json:"private_key"`
 }
 
-// Function to get the profile of a user
+type urlResult struct {
+	URL string
+	Err error
+}
+
+// Original function with goroutine (concurrent)
 func GetProfile(c *gin.Context) {
 
-	// Get the username from the context
 	username, _ := helpers.GetUsername(c)
+	urlChan := make(chan urlResult)
 
-	// Query to get the Mahasiswa data based on the username
-	mhs := models.Mahasiswa{}
-	if err := config.DB.
-		Model(&mhs).Where("npm = ?", username).
-		Preload("User").
-		Preload("ProgramStudi").
-		First(&mhs).Error; err != nil {
-		c.JSON(500, gin.H{"error": true, "message": "Gagal mengambil data mahasiswa"})
-		return
-	}
-
-	// Check if the GCP service account JSON properly set
 	var sa serviceAccount
 	if err := json.Unmarshal([]byte(config.JSONCreds), &sa); err != nil {
 		c.JSON(500, gin.H{"error": true, "message": "GCP_SERVICE_ACCOUNT_JSON is not set or invalid"})
 		return
 	}
 
-	// Create a signed URL for the profile picture
-	opts := &storage.SignedURLOptions{
-		GoogleAccessID: sa.ClientEmail,
-		PrivateKey:     []byte(sa.PrivateKey),
-		Method:         "GET",
-		Expires:        time.Now().Add(1 * time.Hour),
-	}
+	// Start goroutine for signed URL generation
+	go func() {
+		opts := &storage.SignedURLOptions{
+			GoogleAccessID: sa.ClientEmail,
+			PrivateKey:     []byte(sa.PrivateKey),
+			Method:         "GET",
+			Expires:        time.Now().Add(1 * time.Hour),
+		}
 
-	// get the bucket name from environment variable
-	bucketName := os.Getenv("BUCKET_NAME")
+		bucketName := os.Getenv("BUCKET_NAME")
+		objectName := "profile-picture/" + username + ".jpg"
 
-	// Construct the object name for the profile picture
-	objectName := "profile-picture/" + mhs.NPM + ".jpg"
+		url, err := storage.SignedURL(bucketName, objectName, opts)
 
-	// Generate the signed URL and handle any errors
-	url, err := storage.SignedURL(bucketName, objectName, opts)
-	if err != nil {
-		c.JSON(500, gin.H{"error": true, "message": "failed to generate signed URL: %v"})
+		urlChan <- urlResult{URL: url, Err: err}
+	}()
+
+	// Fetch database data concurrently
+	mhs := models.Mahasiswa{}
+	if err := config.DB.
+		Model(&mhs).Where("npm = ?", username).
+		Joins("User").
+		Joins("ProgramStudi").
+		First(&mhs).Error; err != nil {
+		c.JSON(500, gin.H{"error": true, "message": "Gagal mengambil data mahasiswa"})
 		return
 	}
 
-	// Create the response struct with the profile data
+	// Wait for signed URL result
+	result := <-urlChan
+
+	if result.Err != nil {
+		c.JSON(500, gin.H{"error": true, "message": "failed to generate signed URL"})
+		return
+	}
+
 	res := ProfileResponse{
 		NPM:          mhs.NPM,
 		Nama:         mhs.User.Nama,
@@ -86,9 +91,8 @@ func GetProfile(c *gin.Context) {
 		TempatLahir:  mhs.User.TempatLahir,
 		TanggalLahir: mhs.User.TanggalLahir.Format("02-01-2006"),
 		Telepon:      mhs.User.NoTelepon,
-		URL:          url,
+		URL:          result.URL,
 	}
 
-	// Return the profile data as JSON
 	c.JSON(200, gin.H{"error": false, "data": res})
 }

@@ -1,8 +1,8 @@
 package mobile
 
 import (
-	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tikorst/presence-backend/config"
@@ -20,7 +20,7 @@ type GradeResponse struct {
 	IDNilai    int      `json:"id_nilai"`
 	NilaiUTS   *float64 `json:"nilai_uts"`
 	NilaiUAS   *float64 `json:"nilai_uas"`
-	NilaiHuruf *string   `json:"nilai_huruf"`
+	NilaiHuruf *string  `json:"nilai_huruf"`
 	Bobot      *float64 `json:"bobot"`
 }
 
@@ -43,14 +43,26 @@ func GetGrade(c *gin.Context) {
 
 	// If idSemester is 0, fetch the latest semester
 	if idSemester == 0 {
-		var latestSemester models.Semester
-		if err := config.DB.
-			Last(&latestSemester).Error; err != nil {
-			c.JSON(500, gin.H{"error": "Gagal mengambil semester terakhir"})
-			return
+		// Check Redis cache first
+		cachedID, err := config.RedisDB.Get(config.Ctx, "latest_semester_id").Result()
+
+		if err != nil {
+			// Not found in cache - query database
+			var latestSemester models.Semester
+			if err := config.DB.
+				Last(&latestSemester).Error; err != nil {
+				c.JSON(500, gin.H{"error": "Gagal mengambil semester terakhir"})
+				return
+			}
+
+			idSemester = latestSemester.IDSemester
+
+			// Store in Redis for next time
+			config.RedisDB.Set(config.Ctx, "latest_semester_id", idSemester, 24*time.Hour)
+		} else {
+			// Found in cache
+			idSemester, _ = strconv.Atoi(cachedID)
 		}
-		fmt.Println("id_semester", latestSemester)
-		idSemester = latestSemester.IDSemester
 	}
 
 	// Query to get the list of grades for the user in the specified semester

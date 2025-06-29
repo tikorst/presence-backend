@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -39,35 +40,63 @@ func ManualAttendance(c *gin.Context) {
 		return
 	}
 
-	// Check if the user is a lecturer for the class
-	var dosenPengampu models.DosenPengampu
-	if err := config.DB.Where("id_kelas = ? AND nip = ?", classID, username).First(&dosenPengampu).Error; err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk kelas ini"})
-		return
-	}
-
-	// Bind request data
+	// Bind request data early
 	var req ManualAttendanceRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Input tidak valid"})
 		return
 	}
 
-	// Verify if the student is registered in the class
+	// Variables for parallel queries
+	var dosenPengampu models.DosenPengampu
 	var mahasiswaKelas models.MahasiswaKelas
-	if err := config.DB.Where("npm = ? AND id_kelas = ? AND status = ?", req.NPM, classID, "aktif").First(&mahasiswaKelas).Error; err != nil {
+	var existingPresensi models.Presensi
+	var dosenErr, mahasiswaErr, presensiErr error
+	var wg sync.WaitGroup
+
+	wg.Add(3)
+	// Goroutine 1: Check if user is lecturer for the class
+	go func() {
+		defer wg.Done()
+		dosenErr = config.DB.Where("id_kelas = ? AND nip = ?", classID, username).First(&dosenPengampu).Error
+	}()
+
+	// Goroutine 2: Verify if student is registered in the class
+	
+	go func() {
+		defer wg.Done()
+		mahasiswaErr = config.DB.Where("npm = ? AND id_kelas = ? AND status = ?", req.NPM, classID, "aktif").First(&mahasiswaKelas).Error
+	}()
+
+	// Goroutine 3: Check if student has already checked in for this meeting
+	
+	go func() {
+		defer wg.Done()
+		presensiErr = config.DB.Where("npm = ? AND id_pertemuan = ?", req.NPM, meetingID).First(&existingPresensi).Error
+	}()
+
+	// Wait for all validation queries to complete
+	wg.Wait()
+
+	// Check lecturer access first
+	if dosenErr != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Anda tidak memiliki akses untuk kelas ini"})
+		return
+	}
+
+	// Check student registration
+	if mahasiswaErr != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Mahasiswa tidak terdaftar di kelas ini"})
 		return
 	}
 
-	// Check if the student has already checked in for this meeting
-	var existingPresensi models.Presensi
-	if err := config.DB.Where("npm = ? AND id_pertemuan = ?", req.NPM, meetingID).First(&existingPresensi).Error; err == nil {
+	// Check if student already has attendance (presensiErr == nil means record exists)
+	if presensiErr == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Mahasiswa sudah melakukan presensi untuk pertemuan ini"})
 		return
 	}
 
-	// Insert attendance record
+	// All validations passed, create attendance record
 	presensi := models.Presensi{
 		NPM:           req.NPM,
 		IDPertemuan:   meetingID,
@@ -76,7 +105,7 @@ func ManualAttendance(c *gin.Context) {
 		Catatan:       req.Catatan,
 	}
 
-	// Set the class ID for the attendance record
+	// Insert attendance record
 	if err := config.DB.Create(&presensi).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan data presensi"})
 		return

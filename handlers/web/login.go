@@ -2,7 +2,7 @@ package web
 
 import (
 	"encoding/base64"
-	"math/rand"
+	"crypto/rand"
 	"net/http"
 	"os"
 	"time"
@@ -47,7 +47,8 @@ func Login(c *gin.Context) {
 	
 	// Check if password verification failed
 	if passErr != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Username atau password salah"})
+		return
 	}
 
 	// Generate JWT Token
