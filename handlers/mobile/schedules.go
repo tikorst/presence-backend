@@ -54,7 +54,7 @@ func GetSchedules(c *gin.Context) {
 			kelas.nama_kelas,
 			users.nama as nama_dosen,
 			jadwal.kode_ruangan as id_ruangan,
-			CONCAT(sesi.jam_masuk, ' - ', sesi.jam_keluar) as sesi
+			CONCAT(TIME_FORMAT(sesi.jam_masuk, '%H:%i'), ' - ', TIME_FORMAT(sesi.jam_keluar, '%H:%i')) as sesi
 		`).
 		Joins("JOIN kelas ON kelas.id_kelas = mahasiswa_kelas.id_kelas").
 		Joins("JOIN mata_kuliah ON mata_kuliah.id_matkul = kelas.id_matkul").
